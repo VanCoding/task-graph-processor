@@ -1,0 +1,6 @@
+{
+  "buildC": {
+    "command": "npm run build",
+    "dependencies": []
+  }
+}

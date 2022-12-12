@@ -1,0 +1,9 @@
+{
+  "buildB": {
+    "command": "npm run build",
+    "dependencies": [{ "path": "../c", "name": "buildC" }]
+  },
+  "lint": {
+    "command": "echo 'hello'"
+  }
+}
