@@ -1,6 +1,6 @@
 {
   "name": "task-graph-protocol",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "dist/index.js",
   "type": "module",
@@ -10,7 +10,8 @@
   },
   "scripts": {
     "build": "tsc && chmod +x dist/cli.js",
-    "test": "NODE_OPTIONS='--loader ts-node/esm --no-warnings' jest"
+    "test": "NODE_OPTIONS='--loader ts-node/esm --no-warnings' jest",
+    "publish": "npm test && npm run build && npm publish"
   },
   "keywords": [],
   "author": "Patrik Stutz",

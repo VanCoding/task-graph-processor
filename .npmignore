@@ -1,0 +1,9 @@
+/.direnv
+/src
+/test-data
+/.envrc
+/flake.lock
+/flake.nix
+/pnpm-lock.yaml
+/tsconfig.json
+/readme.md
