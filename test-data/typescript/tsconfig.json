@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "module": "ESNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*.ts"]
+}

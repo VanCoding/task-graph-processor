@@ -6,7 +6,7 @@ import { Signal } from "typed-signals";
 import { makeSimpleWorkerFactory } from "./simple-worker.js";
 import { makeTGPWorkerFactory } from "./task-graph-protocol/worker.js";
 
-const protocols = ["simple", "trask-graph-protocol"] as const;
+const protocols = ["simple", "task-graph-protocol"] as const;
 const kinds = ["task", "service"] as const;
 
 export const TaskfileSchema = z.record(

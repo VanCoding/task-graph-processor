@@ -1,15 +1,16 @@
 import { startClient } from "../src/task-graph-protocol/client.js";
 
 console.log("starting up...");
-startClient(({ triggerChange }) => {
-  setInterval(triggerChange, 30000);
+startClient(({ onChange, onFinish }) => {
+  setInterval(onChange, 30000);
   let call = 0;
   return {
-    execute: async () => {
+    execute: () => {
       console.log("building...");
-      await new Promise((r) => setTimeout(r, parseFloat(process.argv[2])));
-      if (call++ == 1) triggerChange();
-      return true;
+      setTimeout(() => {
+        if (call++ == 1) onChange();
+        onFinish(true);
+      }, parseFloat(process.argv[2]));
     },
   };
 });

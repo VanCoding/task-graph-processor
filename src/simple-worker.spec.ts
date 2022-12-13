@@ -1,41 +1,36 @@
+import { callsOf, callsOfAll, spy } from "testtriple";
 import { makeSimpleWorkerFactory } from "./simple-worker.js";
+import { waitFor } from "./testutils.js";
 
 describe("makeSimpleWorkerFactory", () => {
   it("starts the process and calls the hooks correctly", async () => {
-    const onChange = spy();
-    const onOutput = spy();
-    const onComplete = spy();
+    const onChange: () => void = spy();
+    const onOutput: (line: string) => void = spy();
+    const onComplete: (success: boolean) => void = spy();
 
     const worker = makeSimpleWorkerFactory({
       directory: "./test-data/",
       command: "echo $HELLO_WORLD",
     })({
-      onChange: onChange.fn,
-      onOutput: onOutput.fn,
-      onComplete: onComplete.fn,
+      onChange,
+      onOutput,
+      onComplete,
     });
     process.env.HELLO_WORLD = "building...";
     worker.execute();
-    expect(await onOutput.waitForCall()).toStrictEqual(["building..."]);
-    expect(await onComplete.waitForCall()).toStrictEqual([true]);
+    await waitFor(() => callsOf(onComplete).length === 1);
+    expect(callsOfAll(onOutput, onComplete)).toStrictEqual([
+      [onOutput, "building..."],
+      [onComplete, true],
+    ]);
     process.env.HELLO_WORLD = "building again...";
     worker.execute();
-    expect(await onOutput.waitForCall()).toStrictEqual(["building again..."]);
-    expect(await onComplete.waitForCall()).toStrictEqual([true]);
+    await waitFor(() => callsOf(onComplete).length === 2);
+    expect(callsOfAll(onOutput, onComplete)).toStrictEqual([
+      [onOutput, "building..."],
+      [onComplete, true],
+      [onOutput, "building again..."],
+      [onComplete, true],
+    ]);
   });
 });
-
-const spy = () => {
-  let resolve: (args: any[]) => void | undefined;
-  return {
-    fn: (...args: any[]) => {
-      if (resolve) {
-        resolve(args);
-      }
-    },
-    waitForCall: () =>
-      new Promise<any[]>((r) => {
-        resolve = r;
-      }),
-  };
-};

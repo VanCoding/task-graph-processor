@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "tgp": "dist/cli.js"
+    "tgp": "dist/cli.js",
+    "tgp-tsc": "dist/typescript/index.js"
   },
   "scripts": {
     "build": "tsc && chmod +x dist/cli.js",

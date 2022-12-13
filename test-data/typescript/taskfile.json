@@ -1,0 +1,6 @@
+{
+  "build": {
+    "command": "NODE_OPTIONS='--loader ts-node/esm --no-warnings' node ../../src/typescript/index.ts",
+    "protocol": "task-graph-protocol"
+  }
+}

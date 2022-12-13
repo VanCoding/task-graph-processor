@@ -2,13 +2,19 @@ import { Event } from "./index.js";
 import split from "split2";
 
 export const startClient = (
-  handler: (input: { triggerChange: () => void }) => {
-    execute: () => Promise<boolean>;
+  handler: (input: {
+    onChange: () => void;
+    onFinish: (success: boolean) => void;
+  }) => {
+    execute: () => void;
   }
 ) => {
   const worker = handler({
-    triggerChange: () => {
+    onChange: () => {
       send({ type: "CHANGE" });
+    },
+    onFinish: (success: boolean) => {
+      send({ type: "END", success });
     },
   });
 
@@ -17,8 +23,6 @@ export const startClient = (
   };
 
   process.stdin.pipe(split()).on("data", () => {
-    worker.execute().then((success) => {
-      send({ type: "END", success });
-    });
+    worker.execute();
   });
 };
