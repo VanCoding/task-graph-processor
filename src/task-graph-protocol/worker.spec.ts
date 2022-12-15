@@ -3,7 +3,7 @@ import { waitFor } from "../testutils.js";
 import { makeTGPWorkerFactory } from "./worker.js";
 
 describe("makeTGPWorkerFactory", () => {
-  it("starts the process and calls our hooks correctly", async () => {
+  it("in correctly handles processes implementing the TGP protocol", async () => {
     const onChange: () => void = spy();
     const onOutput: (line: string) => void = spy();
     const onComplete: (success: boolean) => void = spy();
@@ -31,6 +31,37 @@ describe("makeTGPWorkerFactory", () => {
       [onComplete, true],
       [onOutput, "building..."],
       [onChange],
+      [onComplete, true],
+    ]);
+  });
+
+  it("it correctly handles processes not implementing the TGP protocol", async () => {
+    const onChange: () => void = spy();
+    const onOutput: (line: string) => void = spy();
+    const onComplete: (success: boolean) => void = spy();
+
+    const worker = makeTGPWorkerFactory({
+      directory: "./test-data/",
+      command: "echo $HELLO_WORLD",
+    })({
+      onChange,
+      onOutput,
+      onComplete,
+    });
+    process.env.HELLO_WORLD = "building...";
+    worker.execute();
+    await waitFor(() => callsOf(onComplete).length === 1);
+    expect(callsOfAll(onOutput, onComplete)).toStrictEqual([
+      [onOutput, "building..."],
+      [onComplete, true],
+    ]);
+    process.env.HELLO_WORLD = "building again...";
+    worker.execute();
+    await waitFor(() => callsOf(onComplete).length === 2);
+    expect(callsOfAll(onOutput, onComplete)).toStrictEqual([
+      [onOutput, "building..."],
+      [onComplete, true],
+      [onOutput, "building again..."],
       [onComplete, true],
     ]);
   });

@@ -1,19 +1,16 @@
-import z, { boolean } from "zod";
+import z from "zod";
 import { resolve, dirname } from "path";
 import { readFileSync, existsSync, realpathSync } from "fs";
 import { indexBy } from "remeda";
 import { Signal } from "typed-signals";
-import { makeSimpleWorkerFactory } from "./simple-worker.js";
 import { makeTGPWorkerFactory } from "./task-graph-protocol/worker.js";
 
-const protocols = ["simple", "task-graph-protocol"] as const;
 const kinds = ["task", "service"] as const;
 
 export const TaskfileSchema = z.record(
   z.string(),
   z.object({
     command: z.string(),
-    protocol: z.enum(protocols).optional().default("simple"),
     kind: z.enum(kinds).optional().default("task"),
     dependencies: z
       .array(
@@ -32,14 +29,12 @@ export type TaskDeclaration = {
   file: string;
   name: string;
   id: string;
-  protocol: TaskProtocol;
   kind: TaskKind;
   dependencies: Array<{ file: string; name: string; id: string }>;
   watch: string[];
   command: string;
 };
 export type TaskKind = typeof kinds[number];
-export type TaskProtocol = typeof protocols[number];
 
 export type WorkerFactory = (init: {
   onOutput: (line: string) => void;
@@ -101,10 +96,10 @@ const prepareInvolvedTasks = (
       if (!declaration) throw new Error(`could not find task ${taskId}`);
       const directory = getTaskDirectory(declaration.file);
 
-      const workerFactory =
-        declaration.protocol === "simple"
-          ? makeSimpleWorkerFactory({ directory, command: declaration.command })
-          : makeTGPWorkerFactory({ directory, command: declaration.command });
+      const workerFactory = makeTGPWorkerFactory({
+        directory,
+        command: declaration.command,
+      });
 
       const onOutput = new Signal<(line: string) => void>();
       const onChange = new Signal<() => void>();

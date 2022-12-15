@@ -16,8 +16,9 @@ export const makeTGPWorkerFactory = ({
       execute: () => {
         if (!process) {
           process = makeProcess({
-            onExit: () => {
+            onExit: (code: number) => {
               process = null;
+              onComplete(code === 0);
             },
             onEvent: (e) => {
               if (e.type == "CHANGE") {
@@ -46,7 +47,7 @@ const makeProcess = ({
 }: {
   command: string;
   directory: string;
-  onExit: () => void;
+  onExit: (code: number) => void;
   onEvent: (event: Event) => void;
   onOutput: (line: string) => void;
 }) => {
