@@ -31,8 +31,9 @@ export const makeTGPWorkerFactory = ({
             command,
             directory,
           });
+        } else {
+          process.send({ type: "START" });
         }
-        process.send({ type: "START" });
       },
     };
   };

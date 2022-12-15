@@ -25,4 +25,5 @@ export const startClient = (
   process.stdin.pipe(split()).on("data", () => {
     worker.execute();
   });
+  worker.execute();
 };
