@@ -1,1 +1,1 @@
-export { startClient } from "./task-graph-protocol/client.js";
+export { startClient } from "./generic-client.js";
