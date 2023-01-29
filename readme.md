@@ -31,7 +31,7 @@ Example:
 {
   "build": {
     "command": "tsc",
-    "dependencies": [{ "path": "../lib", "name": "build" }]
+    "dependencies": ["../lib:build"]
   }
 }
 
@@ -39,7 +39,7 @@ Example:
 {
   "build": {
     "command": "tsc",
-    "dependencies": [{ "path": "../lib", "name": "build" }]
+    "dependencies": ["../lib:build"]
   }
 }
 
