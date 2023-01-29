@@ -46,7 +46,7 @@ type TaskState =
     };
 
 const printTaskLine = (task: Task, text: string) => {
-  console.log(`${task.name}: ${text}`);
+  console.log(`${task.id}> ${text}`);
 };
 
 const getBuildableProjects = (pipeline: Pipeline): Task[] => {
