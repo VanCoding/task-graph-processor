@@ -1,14 +1,14 @@
 import { callsOf, spy, callsOfAll } from "testtriple";
-import { waitFor } from "../testutils.js";
-import { makeTGPWorkerFactory } from "./worker.js";
+import { waitFor } from "./testutils.js";
+import { makeGenericWorkerFactory } from "./generic-worker.js";
 
-describe("makeTGPWorkerFactory", () => {
-  it("in correctly handles processes implementing the TGP protocol", async () => {
+describe("makeGenericWorkerFactory", () => {
+  it("in correctly handles processes implementing the the generic", async () => {
     const onChange: () => void = spy();
     const onOutput: (line: string) => void = spy();
     const onComplete: (success: boolean) => void = spy();
 
-    const worker = makeTGPWorkerFactory({
+    const worker = makeGenericWorkerFactory({
       directory: "./test-data/",
       command: "NODE_OPTIONS='--loader ts-node/esm --no-warnings' node task.ts",
     })({
@@ -35,12 +35,12 @@ describe("makeTGPWorkerFactory", () => {
     ]);
   });
 
-  it("it correctly handles processes not implementing the TGP protocol", async () => {
+  it("it correctly handles processes not implementing the generic protocol", async () => {
     const onChange: () => void = spy();
     const onOutput: (line: string) => void = spy();
     const onComplete: (success: boolean) => void = spy();
 
-    const worker = makeTGPWorkerFactory({
+    const worker = makeGenericWorkerFactory({
       directory: "./test-data/",
       command: "echo $HELLO_WORLD",
     })({

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { startClient } from "../task-graph-protocol/client.js";
+import { startClient } from "../generic-client.js";
 import ts from "typescript";
 import { resolve } from "path";
 

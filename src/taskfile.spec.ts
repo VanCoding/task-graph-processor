@@ -1,6 +1,7 @@
 import { callsOf, spy } from "testtriple";
 import { mkdirSync, writeFileSync } from "fs";
 import { readTasks } from "./taskfile.js";
+import { waitFor } from "./testutils.js";
 describe("readTasks", () => {
   it("reads tasks correctly", () => {
     const tasks = readTasks(["test-data/a:buildA"]);
@@ -39,10 +40,3 @@ describe("readTasks", () => {
     await waitFor(() => callsOf(onChange).length > 0);
   });
 });
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const waitFor = async (f: (...args: any[]) => any, timeout = 1000) => {
-  const start = new Date().getTime();
-  while (!f() && new Date().getTime() - start < timeout) await sleep(100);
-  if (!f()) throw new Error("condition not met within timeout");
-};

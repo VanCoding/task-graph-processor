@@ -1,4 +1,4 @@
-import { startClient } from "../src/task-graph-protocol/client.js";
+import { startClient } from "../src/generic-client.js";
 
 console.log("starting up...");
 startClient(({ onChange, onFinish }) => {

@@ -5,7 +5,7 @@ import { indexBy } from "remeda";
 import { Signal } from "typed-signals";
 import commondir from "commondir";
 import { watch } from "chokidar";
-import { makeTGPWorkerFactory } from "./task-graph-protocol/worker.js";
+import { makeGenericWorkerFactory } from "./generic-worker.js";
 
 const getCommonDirectory = (tasks: TaskDeclaration[]) =>
   commondir(tasks.map((task) => dirname(task.file)));
@@ -17,6 +17,24 @@ export const TaskfileSchema = z.record(
   z.object({
     command: z.string(),
     kind: z.enum(kinds).optional().default("task"),
+    triggerStart: z
+      .object({
+        stdin: z.string(),
+      })
+      .optional(),
+    detectEnd: z
+      .object({
+        stdout: z.object({
+          success: z.string(),
+          failure: z.string(),
+        }),
+      })
+      .optional(),
+    detectChanges: z
+      .object({
+        stdout: z.string(),
+      })
+      .optional(),
     dependencies: z
       .array(
         z
@@ -36,6 +54,9 @@ export type TaskDeclaration = {
   file: string;
   name: string;
   kind: TaskKind;
+  triggerStart?: { stdin: string };
+  detectEnd?: { stdout: { success: string; failure: string } };
+  detectChanges?: { stdout: string };
   dependencies: Array<{ file: string; name: string }>;
   watch: string[];
   command: string;
@@ -117,7 +138,7 @@ const makeTask = (
 ): Task => {
   const directory = getTaskDirectory(declaration.file);
 
-  const workerFactory = makeTGPWorkerFactory({
+  const workerFactory = makeGenericWorkerFactory({
     directory,
     command: declaration.command,
   });
