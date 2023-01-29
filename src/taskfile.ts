@@ -3,7 +3,11 @@ import { resolve, dirname } from "path";
 import { readFileSync, existsSync, realpathSync } from "fs";
 import { indexBy } from "remeda";
 import { Signal } from "typed-signals";
+import commondir from "commondir";
 import { makeTGPWorkerFactory } from "./task-graph-protocol/worker.js";
+
+const getCommonDirectory = (tasks: TaskDeclaration[]) =>
+  commondir(tasks.map((task) => dirname(task.file)));
 
 const kinds = ["task", "service"] as const;
 
@@ -30,9 +34,8 @@ export const TaskfileSchema = z.record(
 export type TaskDeclaration = {
   file: string;
   name: string;
-  id: string;
   kind: TaskKind;
-  dependencies: Array<{ file: string; name: string; id: string }>;
+  dependencies: Array<{ file: string; name: string }>;
   watch: string[];
   command: string;
 };
@@ -58,18 +61,24 @@ export const readTasks = (links: string[]): Task[] => {
   const entrypoints = resolveTaskLinks(links);
   const entrypointFiles = Array.from(new Set(entrypoints.map((e) => e.file)));
   const declarations = readTaskDeclarations(entrypointFiles, new Map());
-  const byId = indexBy(declarations, (d) => d.id);
+  const commonDirectory = getCommonDirectory(declarations);
+  const byId = indexBy(declarations, (d) => buildTaskId(d, commonDirectory));
   const tasks = new Map<string, Task>();
   prepareInvolvedTasks(
-    entrypoints.map((e) => e.id),
+    entrypoints.map((e) => buildTaskId(e, commonDirectory)),
     byId,
-    tasks
+    tasks,
+    commonDirectory
   );
   for (const task of tasks.values()) {
     for (const dependency of byId[task.id].dependencies) {
-      const dependencyTask = tasks.get(dependency.id)!;
+      const dependencyTask = tasks.get(
+        buildTaskId(dependency, commonDirectory)
+      )!;
       if (!dependencyTask) {
-        throw new Error(`Task ${dependency.id} not found`);
+        throw new Error(
+          `Task ${buildTaskId(dependency, commonDirectory)} not found`
+        );
       }
       task.dependencies.push(dependencyTask);
       dependencyTask.dependents.push(task);
@@ -82,7 +91,8 @@ export const readTasks = (links: string[]): Task[] => {
 const prepareInvolvedTasks = (
   taskIds: string[],
   taskDeclarationsById: Record<string, TaskDeclaration>,
-  tasks: Map<string, Task>
+  tasks: Map<string, Task>,
+  commonDirectory: string
 ) => {
   for (const taskId of taskIds) {
     if (!tasks.has(taskId)) {
@@ -105,7 +115,7 @@ const prepareInvolvedTasks = (
         onComplete: (success) => onFinish.emit(success),
       });
       const task: Task = {
-        id: declaration.id,
+        id: buildTaskId(declaration, commonDirectory),
         name: declaration.name,
         dependencies: [],
         dependents: [],
@@ -117,9 +127,10 @@ const prepareInvolvedTasks = (
 
       tasks.set(taskId, task);
       prepareInvolvedTasks(
-        declaration.dependencies.map((d) => d.id),
+        declaration.dependencies.map((d) => buildTaskId(d, commonDirectory)),
         taskDeclarationsById,
-        tasks
+        tasks,
+        commonDirectory
       );
     }
   }
@@ -167,7 +178,6 @@ export const readTaskfileTasks = (file: string): TaskDeclaration[] => {
   const directory = getTaskDirectory(file);
   return Object.entries(parsed).map(([name, task]) => ({
     ...task,
-    id: file + ":" + name,
     name,
     file,
     dependencies: task.dependencies.map((d) =>
@@ -184,7 +194,6 @@ export const getTaskNameAndFile = (
   const file = resolveTaskfile(taskObj.path ?? "./", directory);
   return {
     name: taskObj.name,
-    id: buildTaskId({ name: taskObj.name, file }),
     file,
   };
 };
@@ -198,8 +207,13 @@ export const parseTaskReference = (
 };
 
 export const getTaskDirectory = (taskfilePath: string) => dirname(taskfilePath);
-export const buildTaskId = ({ name, file }: { name: string; file: string }) =>
-  `${file}:${name}`;
+export const buildTaskId = (
+  declaration: Pick<TaskDeclaration, "name" | "file">,
+  commonDirectory: string
+) => {
+  const dir = dirname(declaration.file).substring(commonDirectory.length + 1);
+  return `${dir}:${declaration.name}`;
+};
 
 export type Task = {
   id: string;
