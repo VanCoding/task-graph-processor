@@ -2,6 +2,7 @@ import cp from "child_process";
 import { WorkerFactory } from "../taskfile.js";
 import { Event } from "./index.js";
 import split from "split2";
+import { npmRunPathEnv } from "npm-run-path";
 
 export const makeTGPWorkerFactory = ({
   directory,
@@ -54,6 +55,7 @@ const makeProcess = ({
 }) => {
   const process = cp.spawn("sh", ["-c", command], {
     cwd: directory,
+    env: npmRunPathEnv({ cwd: directory }),
   });
   process.on("exit", onExit);
   const lineStream = process.stdout.pipe(split());
