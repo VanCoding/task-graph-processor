@@ -21,7 +21,7 @@ const cmd = command({
         process.exit(success ? 0 : 1);
       });
     }
-    pipeline.start();
+    pipeline.start({ watch });
   },
 });
 

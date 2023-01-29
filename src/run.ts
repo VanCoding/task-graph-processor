@@ -6,7 +6,14 @@ export const createPipeline = (tasks: Task[]): Pipeline => {
     tasks,
     taskStates: new Map(),
     onFinish: new Signal(),
-    start: () => decideAction(pipeline),
+    start: ({ watch = false }: PipelineOptions = {}) => {
+      decideAction(pipeline);
+      if (watch) {
+        for (const task of tasks) {
+          task.watch();
+        }
+      }
+    },
   };
   tasks.forEach((task) => {
     pipeline.taskStates.set(task, { type: "PENDING" });
@@ -23,11 +30,15 @@ export const createPipeline = (tasks: Task[]): Pipeline => {
   return pipeline;
 };
 
+type PipelineOptions = {
+  watch?: boolean;
+};
+
 type Pipeline = {
   tasks: Task[];
   taskStates: Map<Task, TaskState>;
   onFinish: Signal<(success: boolean) => void>;
-  start: () => void;
+  start: (opts?: PipelineOptions) => void;
 };
 
 type TaskState =

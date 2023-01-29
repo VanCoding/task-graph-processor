@@ -17,6 +17,7 @@
   "author": "Patrik Stutz",
   "license": "MIT",
   "dependencies": {
+    "chokidar": "^3.5.3",
     "cmd-ts": "^0.11.0",
     "commondir": "^1.0.1",
     "remeda": "^1.3.0",

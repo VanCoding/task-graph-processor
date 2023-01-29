@@ -1,5 +1,5 @@
 import { Signal } from "typed-signals";
-import { spy, callOrderOf } from "testtriple";
+import { spy, callOrderOf, callsOf } from "testtriple";
 import { createPipeline } from "./run.js";
 import { Task } from "./taskfile.js";
 
@@ -83,6 +83,28 @@ describe("runTasks", () => {
       callOrderOf(a.execute, b.execute, b2.execute, c.execute)
     ).toStrictEqual([a.execute, b.execute, b2.execute, c.execute]);
   });
+
+  it("doesn't call watch without watch flag", () => {
+    const a = makeTask("a", [], true);
+    const b = makeTask("b", [a], true);
+    const tasks = [a, b];
+    const pipeline = createPipeline(tasks);
+    pipeline.start();
+
+    expect(callsOf(a.watch)).toStrictEqual([]);
+    expect(callsOf(b.watch)).toStrictEqual([]);
+  });
+
+  it("calls watch with watch flag", () => {
+    const a = makeTask("a", [], true);
+    const b = makeTask("b", [a], true);
+    const tasks = [a, b];
+    const pipeline = createPipeline(tasks);
+    pipeline.start({ watch: true });
+
+    expect(callsOf(a.watch)).toStrictEqual([[]]);
+    expect(callsOf(b.watch)).toStrictEqual([[]]);
+  });
 });
 
 const makeTask = (
@@ -99,6 +121,7 @@ const makeTask = (
     execute: spy(() => setTimeout(() => task.onFinish.emit(success), 10)),
     dependencies,
     dependents: [],
+    watch: spy(),
   };
   for (const dependency of dependencies) {
     dependency.dependents.push(task);

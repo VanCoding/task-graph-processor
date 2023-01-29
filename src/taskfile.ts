@@ -4,6 +4,7 @@ import { readFileSync, existsSync, realpathSync } from "fs";
 import { indexBy } from "remeda";
 import { Signal } from "typed-signals";
 import commondir from "commondir";
+import { watch } from "chokidar";
 import { makeTGPWorkerFactory } from "./task-graph-protocol/worker.js";
 
 const getCommonDirectory = (tasks: TaskDeclaration[]) =>
@@ -98,34 +99,8 @@ const prepareInvolvedTasks = (
     if (!tasks.has(taskId)) {
       const declaration = taskDeclarationsById[taskId];
       if (!declaration) throw new Error(`could not find task ${taskId}`);
-      const directory = getTaskDirectory(declaration.file);
 
-      const workerFactory = makeTGPWorkerFactory({
-        directory,
-        command: declaration.command,
-      });
-
-      const onOutput = new Signal<(line: string) => void>();
-      const onChange = new Signal<() => void>();
-      const onFinish = new Signal<(success: boolean) => void>();
-
-      const { execute } = workerFactory({
-        onOutput: (line) => onOutput.emit(line),
-        onChange: () => onChange.emit(),
-        onComplete: (success) => onFinish.emit(success),
-      });
-      const task: Task = {
-        id: buildTaskId(declaration, commonDirectory),
-        name: declaration.name,
-        dependencies: [],
-        dependents: [],
-        execute,
-        onChange,
-        onFinish,
-        onOutput,
-      };
-
-      tasks.set(taskId, task);
+      tasks.set(taskId, makeTask(declaration, commonDirectory));
       prepareInvolvedTasks(
         declaration.dependencies.map((d) => buildTaskId(d, commonDirectory)),
         taskDeclarationsById,
@@ -134,6 +109,46 @@ const prepareInvolvedTasks = (
       );
     }
   }
+};
+
+const makeTask = (
+  declaration: TaskDeclaration,
+  commonDirectory: string
+): Task => {
+  const directory = getTaskDirectory(declaration.file);
+
+  const workerFactory = makeTGPWorkerFactory({
+    directory,
+    command: declaration.command,
+  });
+
+  const onOutput = new Signal<(line: string) => void>();
+  const onChange = new Signal<() => void>();
+  const onFinish = new Signal<(success: boolean) => void>();
+
+  const { execute } = workerFactory({
+    onOutput: (line) => onOutput.emit(line),
+    onChange: () => onChange.emit(),
+    onComplete: (success) => onFinish.emit(success),
+  });
+
+  return {
+    id: buildTaskId(declaration, commonDirectory),
+    name: declaration.name,
+    dependencies: [],
+    dependents: [],
+    execute,
+    watch: () => {
+      if (declaration.watch) {
+        watch(declaration.watch, { cwd: directory }).on("all", () =>
+          onChange.emit()
+        );
+      }
+    },
+    onChange,
+    onFinish,
+    onOutput,
+  };
 };
 
 export const readTaskDeclarations = (
@@ -224,4 +239,5 @@ export type Task = {
   onFinish: Signal<(success: boolean) => void>;
   onChange: Signal<() => void>;
   execute: () => void;
+  watch: () => void;
 };

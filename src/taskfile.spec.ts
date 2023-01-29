@@ -1,3 +1,5 @@
+import { callsOf, spy } from "testtriple";
+import { mkdirSync, writeFileSync } from "fs";
 import { readTasks } from "./taskfile.js";
 describe("readTasks", () => {
   it("reads tasks correctly", () => {
@@ -25,10 +27,22 @@ describe("readTasks", () => {
     await waitFor(() => output.length > 0);
     expect(output).toStrictEqual(["hello"]);
   });
+
+  it("watching files works", async () => {
+    const [buildC] = readTasks(["test-data/c:buildC"]);
+    const onChange = spy();
+    buildC.onChange.connect(onChange);
+    mkdirSync("./test-data/c/tmp/", { recursive: true });
+    buildC.watch();
+    writeFileSync("./test-data/c/tmp/file.txt", new Date().getTime() + "");
+
+    await waitFor(() => callsOf(onChange).length > 0);
+  });
 });
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const waitFor = async (f: (...args: any[]) => any) => {
-  while (!f()) await sleep(1000);
-  return f();
+const waitFor = async (f: (...args: any[]) => any, timeout = 1000) => {
+  const start = new Date().getTime();
+  while (!f() && new Date().getTime() - start < timeout) await sleep(100);
+  if (!f()) throw new Error("condition not met within timeout");
 };

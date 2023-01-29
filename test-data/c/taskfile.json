@@ -1,6 +1,7 @@
 {
   "buildC": {
     "command": "npm run build",
-    "dependencies": []
+    "dependencies": [],
+    "watch": ["./tmp/**"]
   }
 }
