@@ -10,7 +10,7 @@ describe("typescript", () => {
       'export default "hello"'
     );
 
-    const [ts] = readTasks(["build:test-data/typescript"]);
+    const [ts] = readTasks(["test-data/typescript:build"]);
     ts.onOutput.connect((line) => console.log(line));
     const success = await new Promise((resolve) => {
       ts.onFinish.connect(resolve);

@@ -1,6 +1,6 @@
 {
   "buildA": {
     "command": "npm run build",
-    "dependencies": [{ "path": "../b", "name": "buildB" }]
+    "dependencies": ["../b:buildB"]
   }
 }

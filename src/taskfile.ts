@@ -14,10 +14,12 @@ export const TaskfileSchema = z.record(
     kind: z.enum(kinds).optional().default("task"),
     dependencies: z
       .array(
-        z.object({
-          path: z.string().optional(),
-          name: z.string(),
-        })
+        z
+          .object({
+            path: z.string().optional(),
+            name: z.string(),
+          })
+          .or(z.string())
       )
       .optional()
       .default([]),
@@ -50,15 +52,7 @@ export type Worker = {
 };
 
 const resolveTaskLinks = (links: string[], baseDirectory = process.cwd()) =>
-  links.map((link) => {
-    const [name, path = "./"] = link.split(":");
-    const file = resolveTaskfile(path, baseDirectory);
-    return {
-      file,
-      name,
-      id: buildTaskId({ name, file }),
-    };
-  });
+  links.map((link) => getTaskNameAndFile(link, baseDirectory));
 
 export const readTasks = (links: string[]): Task[] => {
   const entrypoints = resolveTaskLinks(links);
@@ -176,15 +170,31 @@ export const readTaskfileTasks = (file: string): TaskDeclaration[] => {
     id: file + ":" + name,
     name,
     file,
-    dependencies: task.dependencies.map((d) => {
-      const file = resolveTaskfile(d.path ?? "./", directory);
-      return {
-        name: d.name,
-        id: buildTaskId({ name: d.name, file }),
-        file,
-      };
-    }),
+    dependencies: task.dependencies.map((d) =>
+      getTaskNameAndFile(d, directory)
+    ),
   }));
+};
+
+export const getTaskNameAndFile = (
+  task: string | { name: string; path?: string },
+  directory: string
+) => {
+  const taskObj = typeof task === "object" ? task : parseTaskReference(task);
+  const file = resolveTaskfile(taskObj.path ?? "./", directory);
+  return {
+    name: taskObj.name,
+    id: buildTaskId({ name: taskObj.name, file }),
+    file,
+  };
+};
+
+export const parseTaskReference = (
+  name: string
+): { name: string; path?: string } => {
+  const parts = name.split(":");
+  if (parts.length > 2) throw new Error(`invalid task ${name}`);
+  return parts.length === 1 ? { name } : { path: parts[0], name: parts[1] };
 };
 
 export const getTaskDirectory = (taskfilePath: string) => dirname(taskfilePath);
