@@ -4,7 +4,7 @@
   "description": "",
   "type": "module",
   "bin": {
-    "tsc-watch": "dist/typescript/index.js"
+    "tsc-watch": "dist/index.js"
   },
   "scripts": {
     "build": "wireit",
