@@ -6,8 +6,8 @@
     "moduleResolution": "NodeNext",
     "lib": ["ESNext"],
     "strict": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "declaration": true
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.spec.ts", "src/testutils.ts"]
+  "include": ["src/**/*.ts"]
 }

@@ -1,4 +1,4 @@
-import { startClient } from "../src/generic-client.js";
+import { startClient } from "./client.js";
 
 console.log("starting up...");
 startClient(({ onChange, onFinish }) => {

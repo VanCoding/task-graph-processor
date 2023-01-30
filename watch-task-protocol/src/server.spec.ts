@@ -1,30 +1,30 @@
 import { callsOf, spy, callsOfAll } from "testtriple";
-import { waitFor } from "./testutils.js";
-import { makeGenericWorkerFactory } from "./generic-worker.js";
+import { makeGenericWorkerFactory } from "./server.js";
 
 describe("makeGenericWorkerFactory", () => {
-  it("in correctly handles processes implementing the the generic", async () => {
+  it("correctly handles processes implementing the the generic", async () => {
     const onChange: () => void = spy();
     const onOutput: (line: string) => void = spy();
     const onComplete: (success: boolean) => void = spy();
 
     const worker = makeGenericWorkerFactory({
-      directory: "./test-data/",
-      command: "NODE_OPTIONS='--loader ts-node/esm --no-warnings' node task.ts",
+      directory: "./",
+      command:
+        "NODE_OPTIONS='--loader ts-node/esm --no-warnings' node src/task.ts",
     })({
       onChange,
       onOutput,
       onComplete,
     });
     worker.execute();
-    await waitFor((f) => callsOf(onComplete).length === 1);
+    await waitFor(() => callsOf(onComplete).length === 1);
     expect(callsOfAll(onOutput, onComplete)).toStrictEqual([
       [onOutput, "starting up..."],
       [onOutput, "building..."],
       [onComplete, true],
     ]);
     worker.execute();
-    await waitFor((f) => callsOf(onComplete).length === 2);
+    await waitFor(() => callsOf(onComplete).length === 2);
     expect(callsOfAll(onOutput, onComplete, onChange)).toStrictEqual([
       [onOutput, "starting up..."],
       [onOutput, "building..."],
@@ -41,7 +41,7 @@ describe("makeGenericWorkerFactory", () => {
     const onComplete: (success: boolean) => void = spy();
 
     const worker = makeGenericWorkerFactory({
-      directory: "./test-data/",
+      directory: "./",
       command: "echo $HELLO_WORLD",
     })({
       onChange,
@@ -66,3 +66,10 @@ describe("makeGenericWorkerFactory", () => {
     ]);
   });
 });
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const waitFor = async (f: (...args: any[]) => any, timeout = 5000) => {
+  const start = new Date().getTime();
+  while (!f() && new Date().getTime() - start < timeout) await sleep(100);
+  if (!f()) throw new Error("condition not met within timeout");
+};

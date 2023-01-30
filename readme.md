@@ -1,23 +1,6 @@
-# task-graph-protocol
+# task-graph-processor
 
-A task graph runner and a protocol for task <-> runner communication that enables very efficient watch pipelines.
-
-## protocol
-
-The main goal of this project is coordinating multiple watch processes. These are processes that don't exit after a build, but instead continue to rebuild as soon as file-changes are detected. The problem with such processes is that they cannot coordinate themselves with each other. So if both `lib` and `app` detect filechanges at the same time, both processes will immediately start re-building. This is a problem, because re-building `app` only makes sense _after_ `lib` is built successfully.
-
-So what I came up with to solve this problem is a protocol for such processes to communicate with the task coordinator or task runner.
-With this protocol, a watch process can notify the runner about changes, and the runner can notify the process when it's time to re-start the task. Additionally, the task can tell the runner if it was successful or not.
-
-The cool thing is that processes not implementing the protocol are still fully compatible with the protocol. Not implementing the protocol means that a process exits after the task is complete and that it's restarted to run the task again. If a process wants to stay alive and still tell the task runner that its job is completed, it can make use of the `task-graph-protocol`.
-
-The protocol is very simple:
-
-1. When the process starts, immediately runs the task
-1. After the task is successful, write `WATCH_TASK_PROTOCOL:SUCCEEDED` to STDOUT, or if the task failed write `WATCH_TASK_PROTOCOL:FAILED`
-1. Do not restart the task until you receive `WATCH_TASK_PROTOCOL:START` on STDIN, then immediately restart it and continue to 2.
-1. A process can exit at any point, this also means the task is completed and the process shall be restarted the next time the task needs to run.
-1. Sometimes a watch process knows best, when it's time to re-run the task because it knows its task the best after all. In this case, it can at any point write `WATCH_TASK_PROTOCOL:DETECTED_CHANGES` to STDOUT. This tells the task runner that it wants to re-run. But remember, it's the task runners job to actually trigger the re-run. So don't restart the task until you receive the `WATCH_TASK_PROTOCOL:START` message.
+A reference task-runner for the [watch-task-protocol](./watch-task-protocol/readme.md) including reference implementations for popular build tools like `TypeScript`.
 
 ## taskfiles
 
@@ -26,7 +9,7 @@ Tasks can depend on tasks from other taskfiles.
 
 Example:
 
-```json
+```js
 // frontend/taskfile.json
 {
   "build": {
@@ -53,6 +36,93 @@ Example:
 
 Running `tgp build:frontend build:backend` will then first build the project `lib` and then the projects `frontend` and `backend` in parallel.
 If the task `build` of `lib` fails, then it won't attempt building `frontend` or `backend`.
+
+## watch mode
+
+The whole point of this project is correctly supporting & orchestrating the watch mode of build tools. If all your build tools support the [watch-task-protocol](./watch-task-protocol/readme.md) you can just run `tgp taskname --watch` and it will automatically re-run your task-graph correctly.
+
+If you have tools that don't support the [watch-task-protocol](./watch-task-protocol/readme.md) you have the following options:
+
+### let the task runner watch files
+
+Instead of starting your build tool in watch-mode, you can tell the task-runner which files to watch, and to restart the task when changes are detected. For this, just specify your glob patterns in an array to the `watch` property of the task.
+
+An example taskfile could then look like this:
+
+```js
+{
+  "build": {
+    "command": "tsc",
+    "watch": ["src/**/*.ts"]
+  }
+}
+```
+
+### create a wrapper
+
+If the tool also has a library-interface, we may be able to build a wrapper around it that does support the protocol. Until we get a broad adoption of the protocol, we welcome such wrappers in this repository. You can find them in the [build-tools](./build-tools/) directory. Currently the following build tools are supported:
+
+- TypeScript
+
+### request support for a restart-trigger
+
+You might be able to convince the authors of the build-tool to give us some way to tell it to only re-run a task if it gets a message from the outside of the process (for example a STDIN-input or a http-request). Detecting a finished or failed task can usually be achieved by parsing the STDOUT of the process and usually does not require a change.
+
+If the tool finally supports the features we need, although not in a protocol-conformant way, we can tell the `task-graph-processor` how to handle it. This can be done through the following task properties:
+
+#### **triggerStart**:
+
+An object of the following stucture:
+
+```js
+{ "stdin": "START_MESSAGE"}
+```
+
+where `START_MESSAGE` is the text that should be written to STDIN of the process to trigger the restart. In the future, we might support different channels than STDIN, like for example HTTP.
+
+When not specified, it defaults to the [watch-task-protocol](./watch-task-protocol/readme.md):
+
+```js
+{ "stdin": "WATCH_TASK_PROTOCOL:START" }
+```
+
+#### **detectEnd**:
+
+An object of the following structure:
+
+```js
+{ "stdout": {
+  "success": "SUCCESS_MESSAGE",
+  "failure": "FAILURE_MESSAGE"
+}}
+```
+
+In this configuration, the task is considered successful as soon as `SUCCESS_MESSAGE` is received via STDOUT and it is considered as failed when `FAILURE_MESSAGE` is received. In the future, we might support different channels than STDOUT.
+
+When not specified, it defaults to the [watch-task-protocol](./watch-task-protocol/readme.md):
+
+```js
+{ "stdout": {
+  "success": "WATCH_TASK_PROTOCOL:SUCCEEDED",
+  "failure": "WATCH_TASK_PROTOCOL:FAILED"
+}}
+```
+
+#### **detectChanges**:
+
+An object of the following structure:
+
+```js
+{ "stdout": "CHANGE_MESSAGE" }
+```
+
+In this configuration, the the task runner will schedula a re-run as soon as `CHANGE_MESSAGE` is received via STDOUT. In the future, we might support different channels than STDOUT.
+
+When not specified, it defaults to the [watch-task-protocol](./watch-task-protocol/readme.md):
+
+```js
+{ "stdout": "WATCH_TASK_PROTOCOL:DETECTED_CHANGES" }
+```
 
 ## license
 

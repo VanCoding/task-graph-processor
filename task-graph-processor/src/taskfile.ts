@@ -5,7 +5,7 @@ import { indexBy } from "remeda";
 import { Signal } from "typed-signals";
 import commondir from "commondir";
 import { watch } from "chokidar";
-import { makeGenericWorkerFactory } from "./generic-worker.js";
+import { makeGenericWorkerFactory } from "watch-task-protocol/server.js";
 
 const getCommonDirectory = (tasks: TaskDeclaration[]) =>
   commondir(tasks.map((task) => dirname(task.file)));
@@ -63,12 +63,6 @@ export type TaskDeclaration = {
 };
 export type TaskKind = typeof kinds[number];
 
-export type WorkerFactory = (init: {
-  onOutput: (line: string) => void;
-  onComplete: (success: boolean) => void;
-  onChange: () => void;
-}) => WorkerFactoryResult;
-export type WorkerFactoryResult = { execute: () => void };
 export type Worker = {
   execute: () => void;
   onChange: Signal<() => void>;

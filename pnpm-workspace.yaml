@@ -1,0 +1,4 @@
+packages:
+  - "task-graph-processor"
+  - "watch-task-protocol"
+  - "build-tools/**"

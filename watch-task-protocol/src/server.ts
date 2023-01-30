@@ -1,7 +1,13 @@
 import cp from "child_process";
-import { WorkerFactory } from "./taskfile.js";
 import split from "split2";
 import { npmRunPathEnv } from "npm-run-path";
+
+export type WorkerFactory = (init: {
+  onOutput: (line: string) => void;
+  onComplete: (success: boolean) => void;
+  onChange: () => void;
+}) => WorkerFactoryResult;
+export type WorkerFactoryResult = { execute: () => void };
 
 export const makeGenericWorkerFactory = ({
   directory,
@@ -76,8 +82,8 @@ const makeProcess = ({
   env: Record<string, string | undefined>;
 }) => {
   const process = cp.spawn("sh", ["-c", command], {
-    cwd: directory,
     env,
+    cwd: directory,
   });
   process.on("exit", onExit);
   const lineStream = process.stdout.pipe(split());
