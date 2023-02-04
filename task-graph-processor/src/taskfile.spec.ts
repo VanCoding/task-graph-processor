@@ -17,8 +17,10 @@ describe("readTasks", () => {
     expect(x.id).toBe("a/node_modules/x:buildX");
   });
   it("reads lint task correctly", () => {
-    const [lint] = readTasks(["test-data/b:lint"]);
+    const [lint, lintC, buildC] = readTasks(["test-data/b:lint"]);
     expect(lint.name).toBe("lint");
+    expect(lintC.id).toBe("c:lint");
+    expect(buildC.id).toBe("c:buildC");
   });
 
   it("wires up workers correctly", async () => {

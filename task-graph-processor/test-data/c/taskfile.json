@@ -3,5 +3,9 @@
     "command": "npm run build",
     "dependencies": [],
     "watch": ["./tmp/**"]
+  },
+  "lint": {
+    "command": "lint",
+    "dependencies": ["buildC"]
   }
 }

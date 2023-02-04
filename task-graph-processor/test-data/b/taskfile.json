@@ -4,6 +4,7 @@
     "dependencies": [{ "path": "../c", "name": "buildC" }]
   },
   "lint": {
-    "command": "echo 'hello'"
+    "command": "echo 'hello'",
+    "dependencies": ["../c:"]
   }
 }

@@ -71,7 +71,7 @@ export type Worker = {
 };
 
 const resolveTaskLinks = (links: string[], baseDirectory = process.cwd()) =>
-  links.map((link) => getTaskNameAndFile(link, baseDirectory));
+  links.map((link) => getTaskNameAndFile(link, baseDirectory, null));
 
 export const readTasks = (links: string[]): Task[] => {
   const entrypoints = resolveTaskLinks(links);
@@ -220,29 +220,36 @@ export const readTaskfileTasks = (file: string): TaskDeclaration[] => {
     name,
     file,
     dependencies: task.dependencies.map((d) =>
-      getTaskNameAndFile(d, directory)
+      getTaskNameAndFile(d, directory, name)
     ),
   }));
 };
 
 export const getTaskNameAndFile = (
-  task: string | { name: string; path?: string },
-  directory: string
+  task: string | { name?: string; path?: string },
+  directory: string,
+  parentTaskName: string | null
 ) => {
   const taskObj = typeof task === "object" ? task : parseTaskReference(task);
-  const file = resolveTaskfile(taskObj.path ?? "./", directory);
+  if (!parentTaskName && !taskObj.name)
+    throw new Error("must specify task name");
+  if (!taskObj.name && !taskObj.path)
+    throw new Error("must specify either name or path");
+  const file = resolveTaskfile(taskObj.path || "./", directory);
   return {
-    name: taskObj.name,
+    name: taskObj.name || parentTaskName!,
     file,
   };
 };
 
 export const parseTaskReference = (
   name: string
-): { name: string; path?: string } => {
+): { name: string; path: string } => {
   const parts = name.split(":");
   if (parts.length > 2) throw new Error(`invalid task ${name}`);
-  return parts.length === 1 ? { name } : { path: parts[0], name: parts[1] };
+  return parts.length === 1
+    ? { name, path: "" }
+    : { path: parts[0], name: parts[1] };
 };
 
 export const getTaskDirectory = (taskfilePath: string) => dirname(taskfilePath);
