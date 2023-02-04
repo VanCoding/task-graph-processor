@@ -1,5 +1,6 @@
 import { makeGenericWorkerFactory } from "watch-task-protocol/server.js";
-import { readFileSync, write, writeFileSync, mkdirSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
+import { spawn } from "child_process";
 
 describe("typescript", () => {
   it("can build typescript projects", async () => {
@@ -9,9 +10,15 @@ describe("typescript", () => {
     let resolve: (success: boolean) => void = () => {};
 
     const { execute } = makeGenericWorkerFactory({
-      directory: "./test-data",
-      command:
-        "NODE_OPTIONS='--loader ts-node/esm --no-warnings' node ../src/index.ts",
+      startProcess: (env) =>
+        spawn("node", ["../src/index.ts"], {
+          cwd: "./test-data",
+          env: {
+            ...process.env,
+            NODE_OPTIONS: "--loader ts-node/esm --no-warnings",
+            ...env,
+          },
+        }),
     })({
       onOutput: (line) => console.log(line),
       onComplete: (success) => resolve(success),

@@ -27,10 +27,11 @@
     "chokidar": "^3.5.3",
     "cmd-ts": "^0.11.0",
     "commondir": "^1.0.1",
+    "npm-run-path": "^5.1.0",
     "remeda": "^1.3.0",
     "typed-signals": "^2.5.0",
-    "zod": "^3.19.1",
-    "watch-task-protocol": "workspace:*"
+    "watch-task-protocol": "workspace:*",
+    "zod": "^3.19.1"
   },
   "jest": {
     "runner": "jest-light-runner",

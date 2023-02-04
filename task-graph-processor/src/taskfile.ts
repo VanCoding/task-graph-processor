@@ -5,6 +5,8 @@ import { indexBy } from "remeda";
 import { Signal } from "typed-signals";
 import commondir from "commondir";
 import { watch } from "chokidar";
+import { npmRunPathEnv } from "npm-run-path";
+import { spawn } from "child_process";
 import { makeGenericWorkerFactory } from "watch-task-protocol/server.js";
 
 const getCommonDirectory = (tasks: TaskDeclaration[]) =>
@@ -133,8 +135,14 @@ const makeTask = (
   const directory = getTaskDirectory(declaration.file);
 
   const workerFactory = makeGenericWorkerFactory({
-    directory,
-    command: declaration.command,
+    startProcess: (env) =>
+      spawn("sh", ["-c", declaration.command], {
+        env: {
+          ...npmRunPathEnv({ cwd: directory }),
+          ...env,
+        },
+        cwd: directory,
+      }),
   });
 
   const onOutput = new Signal<(line: string) => void>();

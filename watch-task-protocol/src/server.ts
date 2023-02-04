@@ -1,6 +1,5 @@
-import cp from "child_process";
+import { ChildProcessWithoutNullStreams } from "child_process";
 import split from "split2";
-import { npmRunPathEnv } from "npm-run-path";
 
 export type WorkerFactory = (init: {
   onOutput: (line: string) => void;
@@ -10,8 +9,7 @@ export type WorkerFactory = (init: {
 export type WorkerFactoryResult = { execute: () => void };
 
 export const makeGenericWorkerFactory = ({
-  directory,
-  command,
+  startProcess,
   triggerStart = { stdin: "WATCH_TASK_PROTOCOL:START" },
   detectEnd = {
     stdout: {
@@ -23,14 +21,14 @@ export const makeGenericWorkerFactory = ({
     stdout: "WATCH_TASK_PROTOCOL:DETECTED_CHANGES",
   },
 }: {
-  directory: string;
-  command: string;
+  startProcess: (env: Record<string, string>) => ChildProcessWithoutNullStreams;
   triggerStart?: { stdin: string };
   detectEnd?: { stdout: { success: string; failure: string } };
   detectChanges?: { stdout: string };
 }): WorkerFactory => {
   return ({ onChange: requestExecution, onOutput: sendOutput, onComplete }) => {
     let process: Process | null = null;
+
     return {
       execute: () => {
         if (!process) {
@@ -50,15 +48,13 @@ export const makeGenericWorkerFactory = ({
               process = null;
               onComplete(code === 0);
             },
-            command,
-            directory,
-            env: {
-              ...npmRunPathEnv({ cwd: directory }),
-              WATCH_TASK_PROTOCOL_START_MESSAGE: triggerStart.stdin,
-              WATCH_TASK_PROTOCOL_SUCCESS_MESSAGE: detectEnd.stdout.success,
-              WATCH_TASK_PROTOCOL_FAILURE_MESSAGE: detectEnd.stdout.failure,
-              WATCH_TASK_PROTOCOL_CHANGE_MESSAGE: detectChanges.stdout,
-            },
+            startProcess: () =>
+              startProcess({
+                WATCH_TASK_PROTOCOL_START_MESSAGE: triggerStart.stdin,
+                WATCH_TASK_PROTOCOL_SUCCESS_MESSAGE: detectEnd.stdout.success,
+                WATCH_TASK_PROTOCOL_FAILURE_MESSAGE: detectEnd.stdout.failure,
+                WATCH_TASK_PROTOCOL_CHANGE_MESSAGE: detectChanges.stdout,
+              }),
           });
         } else {
           process.send(triggerStart.stdin);
@@ -69,22 +65,15 @@ export const makeGenericWorkerFactory = ({
 };
 
 const makeProcess = ({
-  command,
-  directory,
+  startProcess,
   onExit,
   onLine,
-  env,
 }: {
-  command: string;
-  directory: string;
+  startProcess: () => ChildProcessWithoutNullStreams;
   onExit: (code: number) => void;
   onLine: (line: string) => void;
-  env: Record<string, string | undefined>;
 }) => {
-  const process = cp.spawn("sh", ["-c", command], {
-    env,
-    cwd: directory,
-  });
+  const process = startProcess();
   process.on("exit", onExit);
   const lineStream = process.stdout.pipe(split());
   lineStream.on("data", onLine);

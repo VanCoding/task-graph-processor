@@ -12,7 +12,6 @@
     "deploy": "pnpm run clean && pnpm run build && pnpm run test && pnpm publish"
   },
   "dependencies": {
-    "npm-run-path": "^5.1.0",
     "split2": "^4.1.0"
   },
   "jest": {

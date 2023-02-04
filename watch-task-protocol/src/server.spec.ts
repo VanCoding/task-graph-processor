@@ -1,4 +1,5 @@
 import { callsOf, spy, callsOfAll } from "testtriple";
+import { spawn } from "child_process";
 import { makeGenericWorkerFactory } from "./server.js";
 
 describe("makeGenericWorkerFactory", () => {
@@ -8,9 +9,15 @@ describe("makeGenericWorkerFactory", () => {
     const onComplete: (success: boolean) => void = spy();
 
     const worker = makeGenericWorkerFactory({
-      directory: "./",
-      command:
-        "NODE_OPTIONS='--loader ts-node/esm --no-warnings' node src/task.ts",
+      startProcess: (env) =>
+        spawn("node", ["src/task.ts"], {
+          cwd: "./",
+          env: {
+            ...process.env,
+            NODE_OPTIONS: "--loader ts-node/esm --no-warnings",
+            ...env,
+          },
+        }),
     })({
       onChange,
       onOutput,
@@ -41,8 +48,11 @@ describe("makeGenericWorkerFactory", () => {
     const onComplete: (success: boolean) => void = spy();
 
     const worker = makeGenericWorkerFactory({
-      directory: "./",
-      command: "echo $HELLO_WORLD",
+      startProcess: (env) =>
+        spawn("sh", ["-c", "echo $HELLO_WORLD"], {
+          cwd: "./",
+          env: { ...process.env, ...env },
+        }),
     })({
       onChange,
       onOutput,
