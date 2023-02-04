@@ -54,7 +54,10 @@ const getBuildableProjects = (pipeline: Pipeline): TaskItem[] => {
     (task) =>
       task.state.type === "PENDING" &&
       !task.dependencies.find(
-        (dependency) => dependency.state.type !== "COMPLETE"
+        (dependency) =>
+          (dependency.kind === "task" &&
+            dependency.state.type !== "COMPLETE") ||
+          (dependency.kind === "service" && dependency.state.type === "PENDING")
       )
   );
 };
