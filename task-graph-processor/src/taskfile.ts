@@ -4,10 +4,8 @@ import { readFileSync, existsSync, realpathSync } from "fs";
 import { indexBy } from "remeda";
 import { Signal } from "typed-signals";
 import commondir from "commondir";
-import { watch } from "chokidar";
-import { npmRunPathEnv } from "npm-run-path";
-import { spawn } from "child_process";
-import { makeGenericWorkerFactory } from "watch-task-protocol/server.js";
+import { makeService } from "./service.js";
+import { makeTask } from "./task.js";
 
 const getCommonDirectory = (tasks: TaskDeclaration[]) =>
   commondir(tasks.map((task) => dirname(task.file)));
@@ -75,13 +73,13 @@ export type Worker = {
 const resolveTaskLinks = (links: string[], baseDirectory = process.cwd()) =>
   links.map((link) => getTaskNameAndFile(link, baseDirectory, null));
 
-export const readTasks = (links: string[]): Task[] => {
+export const readTasks = (links: string[]): TaskItem[] => {
   const entrypoints = resolveTaskLinks(links);
   const entrypointFiles = Array.from(new Set(entrypoints.map((e) => e.file)));
   const declarations = readTaskDeclarations(entrypointFiles, new Map());
   const commonDirectory = getCommonDirectory(declarations);
   const byId = indexBy(declarations, (d) => buildTaskId(d, commonDirectory));
-  const tasks = new Map<string, Task>();
+  const tasks = new Map<string, TaskItem>();
   prepareInvolvedTasks(
     entrypoints.map((e) => buildTaskId(e, commonDirectory)),
     byId,
@@ -109,7 +107,7 @@ export const readTasks = (links: string[]): Task[] => {
 const prepareInvolvedTasks = (
   taskIds: string[],
   taskDeclarationsById: Record<string, TaskDeclaration>,
-  tasks: Map<string, Task>,
+  tasks: Map<string, TaskItem>,
   commonDirectory: string
 ) => {
   for (const taskId of taskIds) {
@@ -117,7 +115,7 @@ const prepareInvolvedTasks = (
       const declaration = taskDeclarationsById[taskId];
       if (!declaration) throw new Error(`could not find task ${taskId}`);
 
-      tasks.set(taskId, makeTask(declaration, commonDirectory));
+      tasks.set(taskId, makeTaskItem(declaration, commonDirectory));
       prepareInvolvedTasks(
         declaration.dependencies.map((d) => buildTaskId(d, commonDirectory)),
         taskDeclarationsById,
@@ -128,50 +126,25 @@ const prepareInvolvedTasks = (
   }
 };
 
-const makeTask = (
+const makeTaskItem = (
   declaration: TaskDeclaration,
   commonDirectory: string
-): Task => {
+): TaskItem => {
   const directory = getTaskDirectory(declaration.file);
-
-  const workerFactory = makeGenericWorkerFactory({
-    startProcess: (env) =>
-      spawn("sh", ["-c", declaration.command], {
-        env: {
-          ...npmRunPathEnv({ cwd: directory }),
-          ...env,
-        },
-        cwd: directory,
-      }),
-  });
-
   const onOutput = new Signal<(line: string) => void>();
-  const onChange = new Signal<() => void>();
-  const onFinish = new Signal<(success: boolean) => void>();
 
-  const { execute } = workerFactory({
-    onOutput: (line) => onOutput.emit(line),
-    onChange: () => onChange.emit(),
-    onComplete: (success) => onFinish.emit(success),
-  });
-
-  return {
+  const base: BaseTask = {
     id: buildTaskId(declaration, commonDirectory),
     name: declaration.name,
     dependencies: [],
     dependents: [],
-    execute,
-    watch: () => {
-      if (declaration.watch) {
-        watch(declaration.watch, { cwd: directory }).on("all", () =>
-          onChange.emit()
-        );
-      }
-    },
-    onChange,
-    onFinish,
     onOutput,
+    state: { type: "PENDING" },
   };
+
+  return declaration.kind === "task"
+    ? makeTask({ declaration, directory, base })
+    : makeService({ declaration, directory, base });
 };
 
 export const readTaskDeclarations = (
@@ -269,14 +242,41 @@ export const buildTaskId = (
   return `${dir}:${declaration.name}`;
 };
 
-export type Task = {
+type TaskState =
+  | {
+      type: "PENDING";
+    }
+  | {
+      type: "RUNNING";
+      start: Date;
+      dirty: boolean;
+    }
+  | {
+      type: "COMPLETE";
+      time: number;
+      success: boolean;
+    };
+
+export type BaseTask = {
   id: string;
   name: string;
-  dependencies: Task[];
-  dependents: Task[];
+  dependencies: TaskItem[];
+  dependents: TaskItem[];
   onOutput: Signal<(line: string) => void>;
+  state: TaskState;
+};
+
+export type Task = BaseTask & {
+  kind: "task";
   onFinish: Signal<(success: boolean) => void>;
   onChange: Signal<() => void>;
   execute: () => void;
   watch: () => void;
 };
+
+export type Service = BaseTask & {
+  kind: "service";
+  start: () => void;
+};
+
+export type TaskItem = Task | Service;

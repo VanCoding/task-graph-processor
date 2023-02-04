@@ -28,6 +28,7 @@ describe("readTasks", () => {
     expect(lint.name).toBe("lint");
     const output: string[] = [];
     lint.onOutput.connect((line) => output.push(line));
+    if (lint.kind !== "task") throw new Error("must be a task");
     lint.execute();
     await waitFor(() => output.length > 0);
     expect(output).toStrictEqual(["hello"]);
@@ -35,6 +36,7 @@ describe("readTasks", () => {
 
   it("watching files works", async () => {
     const [buildC] = readTasks(["test-data/c:buildC"]);
+    if (buildC.kind !== "task") throw new Error("must be a task");
     const onChange = spy();
     buildC.onChange.connect(onChange);
     mkdirSync("./test-data/c/tmp/", { recursive: true });

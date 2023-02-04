@@ -1,7 +1,7 @@
 import { Signal } from "typed-signals";
 import { spy, callOrderOf, callsOf } from "testtriple";
 import { createPipeline } from "./run.js";
-import { Task } from "./taskfile.js";
+import { Service, Task, TaskItem } from "./taskfile.js";
 
 describe("runTasks", () => {
   it("runs tasks in order", async () => {
@@ -10,7 +10,7 @@ describe("runTasks", () => {
     const c = makeTask("c", [b], true);
 
     const result = await new Promise((resolve) => {
-      const pipeline = createPipeline([a, b, c]);
+      const pipeline = createPipeline([a, b, c], {});
       pipeline.onFinish.connect(resolve);
       pipeline.start();
     });
@@ -27,7 +27,7 @@ describe("runTasks", () => {
     const b = makeTask("b", [a], false);
     const c = makeTask("c", [b], true);
     const result = await new Promise((resolve) => {
-      const pipeline = createPipeline([a, b, c]);
+      const pipeline = createPipeline([a, b, c], {});
       pipeline.onFinish.connect(resolve);
       pipeline.start();
     });
@@ -54,7 +54,7 @@ describe("runTasks", () => {
     });
 
     const result = await new Promise((resolve) => {
-      const pipeline = createPipeline([a, b, c]);
+      const pipeline = createPipeline([a, b, c], {});
       pipeline.onFinish.connect(resolve);
       pipeline.start();
     });
@@ -73,7 +73,7 @@ describe("runTasks", () => {
     const b2 = makeTask("b2", [a], true);
     const c = makeTask("c", [b, b2], true);
     const result = await new Promise((resolve) => {
-      const pipeline = createPipeline([a, b, b2, c]);
+      const pipeline = createPipeline([a, b, b2, c], {});
       pipeline.onFinish.connect(resolve);
       pipeline.start();
     });
@@ -88,7 +88,7 @@ describe("runTasks", () => {
     const a = makeTask("a", [], true);
     const b = makeTask("b", [a], true);
     const tasks = [a, b];
-    const pipeline = createPipeline(tasks);
+    const pipeline = createPipeline(tasks, {});
     pipeline.start();
 
     expect(callsOf(a.watch)).toStrictEqual([]);
@@ -99,21 +99,56 @@ describe("runTasks", () => {
     const a = makeTask("a", [], true);
     const b = makeTask("b", [a], true);
     const tasks = [a, b];
-    const pipeline = createPipeline(tasks);
-    pipeline.start({ watch: true });
+    const pipeline = createPipeline(tasks, { watch: true });
+    pipeline.start();
 
     expect(callsOf(a.watch)).toStrictEqual([[]]);
     expect(callsOf(b.watch)).toStrictEqual([[]]);
   });
+
+  it("doesn't run services if not in watch mode", () => {
+    const s = makeService("s");
+    const pipeline = createPipeline([s], {});
+    pipeline.start();
+    expect(callsOf(s.start)).toStrictEqual([]);
+  });
+
+  it("runs services if in watch mode and immediately continues to next task", async () => {
+    const s = makeService("s");
+    const a = makeTask("a", [s], true);
+    await new Promise((resolve) => {
+      const pipeline = createPipeline([a, s], { watch: true });
+      pipeline.onFinish.connect(resolve);
+      pipeline.start();
+    });
+
+    expect(callsOf(s.start)).toStrictEqual([[]]);
+    expect(callsOf(a.execute)).toStrictEqual([[]]);
+  });
 });
+
+const makeService = (name: string) => {
+  const task: Service = {
+    id: name,
+    kind: "service",
+    name,
+    onOutput: new Signal(),
+    start: spy(),
+    dependencies: [],
+    dependents: [],
+    state: { type: "PENDING" },
+  };
+  return task;
+};
 
 const makeTask = (
   name: string,
-  dependencies: Task[],
+  dependencies: TaskItem[],
   success: boolean
 ): Task => {
   const task: Task = {
     id: name,
+    kind: "task",
     name,
     onFinish: new Signal(),
     onChange: new Signal(),
@@ -122,6 +157,7 @@ const makeTask = (
     dependencies,
     dependents: [],
     watch: spy(),
+    state: { type: "PENDING" },
   };
   for (const dependency of dependencies) {
     dependency.dependents.push(task);
