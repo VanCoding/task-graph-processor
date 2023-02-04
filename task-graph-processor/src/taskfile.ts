@@ -14,40 +14,42 @@ const kinds = ["task", "service"] as const;
 
 export const TaskfileSchema = z.record(
   z.string(),
-  z.object({
-    command: z.string(),
-    kind: z.enum(kinds).optional().default("task"),
-    triggerStart: z
-      .object({
-        stdin: z.string(),
-      })
-      .optional(),
-    detectEnd: z
-      .object({
-        stdout: z.object({
-          success: z.string(),
-          failure: z.string(),
-        }),
-      })
-      .optional(),
-    detectChanges: z
-      .object({
-        stdout: z.string(),
-      })
-      .optional(),
-    dependencies: z
-      .array(
-        z
-          .object({
-            path: z.string().optional(),
-            name: z.string(),
-          })
-          .or(z.string())
-      )
-      .optional()
-      .default([]),
-    watch: z.array(z.string()).optional().default([]),
-  })
+  z
+    .object({
+      command: z.string(),
+      kind: z.enum(kinds).optional().default("task"),
+      triggerStart: z
+        .object({
+          stdin: z.string(),
+        })
+        .optional(),
+      detectEnd: z
+        .object({
+          stdout: z.object({
+            success: z.string(),
+            failure: z.string(),
+          }),
+        })
+        .optional(),
+      detectChanges: z
+        .object({
+          stdout: z.string(),
+        })
+        .optional(),
+      dependencies: z
+        .array(
+          z
+            .object({
+              path: z.string().optional(),
+              name: z.string(),
+            })
+            .or(z.string())
+        )
+        .optional()
+        .default([]),
+      watch: z.array(z.string()).optional().default([]),
+    })
+    .or(z.string())
 );
 
 export type TaskDeclaration = {
@@ -196,14 +198,21 @@ export const readTaskfileTasks = (file: string): TaskDeclaration[] => {
   const content = readFileSync(file).toString("utf-8");
   const parsed = TaskfileSchema.parse(JSON.parse(content));
   const directory = getTaskDirectory(file);
-  return Object.entries(parsed).map(([name, task]) => ({
-    ...task,
-    name,
-    file,
-    dependencies: task.dependencies.map((d) =>
-      getTaskNameAndFile(d, directory, name)
-    ),
-  }));
+  return Object.entries(parsed).map(([name, task]) => {
+    return {
+      ...(typeof task === "string"
+        ? { command: task, kind: "task", watch: [] }
+        : task),
+      name,
+      file,
+      dependencies:
+        typeof task === "string"
+          ? []
+          : task.dependencies.map((d) =>
+              getTaskNameAndFile(d, directory, name)
+            ),
+    };
+  });
 };
 
 export const getTaskNameAndFile = (
