@@ -196,6 +196,15 @@ export const resolveTaskfile = (path: string, baseDirectory: string) => {
   if (existsSync(dirPath)) {
     return realpathSync(dirPath);
   }
+  const nodeModulePath = resolve(
+    baseDirectory,
+    "node_modules",
+    path,
+    "taskfile.json"
+  );
+  if (existsSync(nodeModulePath)) {
+    return realpathSync(nodeModulePath);
+  }
   throw new Error(`No Taskfile at ${path}`);
 };
 

@@ -5,14 +5,16 @@ import { readTasks } from "./taskfile.js";
 describe("readTasks", () => {
   it("reads tasks correctly", () => {
     const tasks = readTasks(["test-data/a:buildA"]);
-    const [a, b, c] = tasks;
-    expect(tasks).toHaveLength(3);
+    const [a, b, c, x] = tasks;
+    expect(tasks).toHaveLength(4);
     expect(a.name).toBe("buildA");
     expect(a.id).toBe("a:buildA");
     expect(b.name).toBe("buildB");
     expect(b.id).toBe("b:buildB");
     expect(c.name).toBe("buildC");
     expect(c.id).toBe("c:buildC");
+    expect(x.name).toBe("buildX");
+    expect(x.id).toBe("a/node_modules/x:buildX");
   });
   it("reads lint task correctly", () => {
     const [lint] = readTasks(["test-data/b:lint"]);
