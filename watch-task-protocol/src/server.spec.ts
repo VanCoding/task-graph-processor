@@ -1,4 +1,4 @@
-import { callsOf, spy, callsOfAll } from "testtriple";
+import { callsOf, spy, callsOfAll, callOrderOf } from "testtriple";
 import { spawn } from "child_process";
 import { makeGenericWorkerFactory } from "./server.js";
 
@@ -24,21 +24,31 @@ describe("makeGenericWorkerFactory", () => {
       onComplete,
     });
     worker.execute();
-    await waitFor(() => callsOf(onComplete).length === 1);
-    expect(callsOfAll(onOutput, onComplete)).toStrictEqual([
-      [onOutput, "starting up..."],
-      [onOutput, "building..."],
-      [onComplete, true],
+    await waitFor(
+      () => callsOf(onOutput).length === 3 && callsOf(onComplete).length === 1
+    );
+
+    const output = callsOf(onOutput).map(([line]) => line);
+
+    expect(output).toContain("starting up...");
+    expect(output).toContain("building...");
+    expect(output).toContain("test error");
+    expect(callOrderOf(onOutput, onComplete)).toStrictEqual([
+      onOutput,
+      onOutput,
+      onOutput,
+      onComplete,
     ]);
     worker.execute();
     await waitFor(() => callsOf(onComplete).length === 2);
-    expect(callsOfAll(onOutput, onComplete, onChange)).toStrictEqual([
-      [onOutput, "starting up..."],
-      [onOutput, "building..."],
-      [onComplete, true],
-      [onOutput, "building..."],
-      [onChange],
-      [onComplete, true],
+    expect(callOrderOf(onOutput, onComplete, onChange)).toStrictEqual([
+      onOutput,
+      onOutput,
+      onOutput,
+      onComplete,
+      onOutput,
+      onChange,
+      onComplete,
     ]);
   });
 

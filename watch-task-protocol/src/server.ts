@@ -75,8 +75,8 @@ const makeProcess = ({
 }) => {
   const process = startProcess();
   process.on("exit", onExit);
-  const lineStream = process.stdout.pipe(split());
-  lineStream.on("data", onLine);
+  process.stdout.pipe(split()).on("data", onLine);
+  process.stderr.pipe(split()).on("data", onLine);
 
   return {
     send: (line: string) => {
