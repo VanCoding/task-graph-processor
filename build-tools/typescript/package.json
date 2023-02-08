@@ -7,18 +7,7 @@
     "tsc-watch": "dist/index.js"
   },
   "scripts": {
-    "build": "wireit",
-    "clean": "rm -rf dist",
-    "test": "NODE_OPTIONS='--loader ts-node/esm --no-warnings' jest src/**",
-    "deploy": "pnpm run clean && pnpm run build && pnpm run test && pnpm publish"
-  },
-  "wireit": {
-    "build": {
-      "command": "tsc",
-      "dependencies": [
-        "../../watch-task-protocol:build"
-      ]
-    }
+    "deploy": "tgp build test && pnpm publish"
   },
   "keywords": [],
   "author": "Patrik Stutz",
@@ -40,6 +29,7 @@
     "jest-light-runner": "^0.4.1",
     "testtriple": "^2.2.3",
     "ts-node": "^10.9.1",
-    "typescript": "^4.9.4"
+    "typescript": "^4.9.4",
+    "watch-task-protocol-typescript": "0.2.0"
   }
 }

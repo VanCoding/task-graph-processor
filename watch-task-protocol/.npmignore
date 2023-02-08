@@ -1,4 +1,3 @@
 /src
-/.wireit
 /tsconfig.json
 /dist/*.spec.*

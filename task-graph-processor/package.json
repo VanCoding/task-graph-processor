@@ -7,18 +7,7 @@
     "tgp": "dist/cli.js"
   },
   "scripts": {
-    "build": "wireit",
-    "clean": "rm -rf dist",
-    "test": "NODE_OPTIONS='--loader ts-node/esm --no-warnings' jest src/**",
-    "deploy": "pnpm run clean && pnpm run build && pnpm run test && pnpm publish"
-  },
-  "wireit": {
-    "build": {
-      "command": "tsc && chmod +x dist/cli.js",
-      "dependencies": [
-        "../watch-task-protocol:build"
-      ]
-    }
+    "deploy": "tgp build test && pnpm publish"
   },
   "keywords": [],
   "author": "Patrik Stutz",
@@ -39,6 +28,7 @@
     "testTimeout": 1000
   },
   "devDependencies": {
+    "watch-task-protocol-typescript": "0.2.0",
     "@types/commondir": "^1.0.0",
     "@types/jest": "^29.2.4",
     "@types/node": "^18.11.13",

@@ -2,33 +2,11 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "test": "wireit",
-    "build": "wireit",
-    "clean": "wireit"
-  },
-  "wireit": {
-    "test": {
-      "dependencies": [
-        "./task-graph-processor:test",
-        "./watch-task-protocol:test",
-        "./build-tools/typescript:test"
-      ]
-    },
-    "build": {
-      "dependencies": [
-        "./task-graph-processor:build",
-        "./build-tools/typescript:build"
-      ]
-    },
-    "clean": {
-      "dependencies": [
-        "./task-graph-processor:clean",
-        "./watch-task-protocol:clean",
-        "./build-tools/typescript:clean"
-      ]
-    }
+    "test": "tgp ./build-tools/typescript:test ./task-graph-processor:test ./watch-task-protocol:test",
+    "build": "tgp ./build-tools/typescript:build ./task-graph-processor:build",
+    "clean": "tgp ./build-tools/typescript:clean ./task-graph-processor:clean ./watch-task-protocol:clean"
   },
   "dependencies": {
-    "wireit": "^0.9.3"
+    "task-graph-processor": "0.2.1"
   }
 }
