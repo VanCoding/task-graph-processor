@@ -15,13 +15,13 @@ const cmd = command({
   },
   handler: ({ watch, tasks: taskPaths }) => {
     const tasks = readTasks(taskPaths);
-    const pipeline = createPipeline(tasks);
+    const pipeline = createPipeline(tasks, { watch });
     if (!watch) {
       pipeline.onFinish.connect((success) => {
         process.exit(success ? 0 : 1);
       });
     }
-    pipeline.start({ watch });
+    pipeline.start();
   },
 });
 
