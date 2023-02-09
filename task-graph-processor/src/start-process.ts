@@ -10,11 +10,13 @@ export const startProcess = ({
   command: string;
   directory: string;
 }) => {
-  return spawn("sh", ["-c", command], {
+  return spawn(command, {
     env: {
+      FORCE_COLOR: "true",
       ...npmRunPathEnv({ cwd: directory }),
       ...env,
     },
     cwd: directory,
+    shell: true,
   });
 };
