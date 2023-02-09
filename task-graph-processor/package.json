@@ -1,6 +1,6 @@
 {
   "name": "task-graph-processor",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "",
   "type": "module",
   "bin": {
