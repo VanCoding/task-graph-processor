@@ -7,6 +7,6 @@
     "clean": "tgp ./build-tools/typescript:clean ./task-graph-processor:clean ./watch-task-protocol:clean"
   },
   "dependencies": {
-    "task-graph-processor": "0.2.1"
+    "task-graph-processor": "0.2.2"
   }
 }

@@ -4,9 +4,9 @@ importers:
 
   .:
     specifiers:
-      task-graph-processor: 0.2.1
+      task-graph-processor: 0.2.2
     dependencies:
-      task-graph-processor: 0.2.1
+      task-graph-processor: 0.2.2
 
   build-tools/typescript:
     specifiers:
@@ -18,7 +18,7 @@ importers:
       ts-node: ^10.9.1
       typescript: ^4.9.4
       watch-task-protocol: workspace:*
-      watch-task-protocol-typescript: 0.2.0
+      watch-task-protocol-typescript: 0.2.1
     dependencies:
       watch-task-protocol: link:../../watch-task-protocol
     devDependencies:
@@ -29,7 +29,7 @@ importers:
       testtriple: 2.2.3
       ts-node: 10.9.1_awa2wsr5thmg3i7jqycphctjfq
       typescript: 4.9.4
-      watch-task-protocol-typescript: 0.2.0_typescript@4.9.4
+      watch-task-protocol-typescript: 0.2.1_typescript@4.9.4
 
   build-tools/typescript/test-data:
     specifiers: {}
@@ -53,7 +53,7 @@ importers:
       typed-signals: ^2.5.0
       typescript: ^4.9.4
       watch-task-protocol: workspace:*
-      watch-task-protocol-typescript: 0.2.0
+      watch-task-protocol-typescript: 0.2.1
       zod: ^3.19.1
     dependencies:
       chokidar: 3.5.3
@@ -75,7 +75,7 @@ importers:
       testtriple: 2.2.3
       ts-node: 10.9.1_awa2wsr5thmg3i7jqycphctjfq
       typescript: 4.9.4
-      watch-task-protocol-typescript: 0.2.0_typescript@4.9.4
+      watch-task-protocol-typescript: link:../build-tools/typescript
 
   watch-task-protocol:
     specifiers:
@@ -88,7 +88,7 @@ importers:
       testtriple: ^2.2.3
       ts-node: ^10.9.1
       typescript: ^4.9.4
-      watch-task-protocol-typescript: 0.2.0
+      watch-task-protocol-typescript: 0.2.1
     dependencies:
       split2: 4.1.0
     devDependencies:
@@ -100,7 +100,7 @@ importers:
       testtriple: 2.2.3
       ts-node: 10.9.1_awa2wsr5thmg3i7jqycphctjfq
       typescript: 4.9.4
-      watch-task-protocol-typescript: 0.2.0_typescript@4.9.4
+      watch-task-protocol-typescript: link:../build-tools/typescript
 
 packages:
 
@@ -2656,8 +2656,8 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /task-graph-processor/0.2.1:
-    resolution: {integrity: sha512-As9XcgOvFFAcB+KLkchZIW1g1Q7PsP7sDgJy7s8akhG3FGnlT7XBLRSFHHV+OV4o4ALv6k4NZ24lb1b+uQayxA==}
+  /task-graph-processor/0.2.2:
+    resolution: {integrity: sha512-TEFgrCcc1ES7UW1xw4hprfhsiM/avXVyQmclJpLEnPx3/k4sUVh/gndkgtN/KeGxbfP+ujOdY09Azz/RIepF7g==}
     hasBin: true
     dependencies:
       chokidar: 3.5.3
@@ -2667,7 +2667,7 @@ packages:
       remeda: 1.6.1
       split2: 4.1.0
       typed-signals: 2.5.0
-      watch-task-protocol: 0.2.0
+      watch-task-protocol: 0.2.1
       zod: 3.20.2
     transitivePeerDependencies:
       - supports-color
@@ -2789,18 +2789,18 @@ packages:
       makeerror: 1.0.12
     dev: true
 
-  /watch-task-protocol-typescript/0.2.0_typescript@4.9.4:
-    resolution: {integrity: sha512-b7KT50XGux5/ujRWpiIjoE1G16t/USCUMHB3g9PTun/uAx/60uPTQpgaBDsLMBVG+cuJ5uCh//WbCEySrxDxPw==}
+  /watch-task-protocol-typescript/0.2.1_typescript@4.9.4:
+    resolution: {integrity: sha512-kWOeTa7bNoX7GExnc75nRr8HW2q1aQjFvfCKCkHUKYJiF7iFL/1eRq4IuoDICGyE+zCcyG44Pq6tqZMdU/9sNg==}
     hasBin: true
     peerDependencies:
       typescript: ^4.9.4
     dependencies:
       typescript: 4.9.4
-      watch-task-protocol: 0.2.0
+      watch-task-protocol: 0.2.1
     dev: true
 
-  /watch-task-protocol/0.2.0:
-    resolution: {integrity: sha512-Ll+I2+QQX6+n3pZ/cmXNFb7zTfpYR1WLs5wWkUrRs5mLgs7AnVIPylZxxb8fTST5t1YgnPjD/w01HEUGKc9C6Q==}
+  /watch-task-protocol/0.2.1:
+    resolution: {integrity: sha512-xh3tuVKzlPyjncyHGqTh0rAt+0ZQz/dtaNRHJQPbnIAQb9NTyV95OCAvg4BoRfmUZzKbdVKMoIr9lWazUphipA==}
     dependencies:
       split2: 4.1.0
 

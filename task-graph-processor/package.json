@@ -28,7 +28,6 @@
     "testTimeout": 1000
   },
   "devDependencies": {
-    "watch-task-protocol-typescript": "0.2.0",
     "@types/commondir": "^1.0.0",
     "@types/jest": "^29.2.4",
     "@types/node": "^18.11.13",
@@ -37,6 +36,7 @@
     "jest-light-runner": "^0.4.1",
     "testtriple": "^2.2.3",
     "ts-node": "^10.9.1",
-    "typescript": "^4.9.4"
+    "typescript": "^4.9.4",
+    "watch-task-protocol-typescript": "0.2.1"
   }
 }
