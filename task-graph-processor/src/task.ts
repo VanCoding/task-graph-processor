@@ -15,7 +15,7 @@ export const makeTask = ({
 }): TaskItem => {
   const workerFactory = makeGenericWorkerFactory({
     startProcess: (env) =>
-      startProcess({ env, command: declaration.command, directory }),
+      startProcess({ env, command: declaration.command!, directory }),
     detectChanges: declaration.detectChanges,
     detectEnd: declaration.detectEnd,
     triggerStart: declaration.triggerStart,

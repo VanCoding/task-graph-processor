@@ -6,5 +6,11 @@
   "lint": {
     "command": "echo 'hello'",
     "dependencies": ["../c:"]
+  },
+  "buildX": {
+    "command": "asdf"
+  },
+  "build": {
+    "dependencies": ["buildX"]
   }
 }

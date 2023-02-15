@@ -45,6 +45,16 @@ describe("readTasks", () => {
 
     await waitFor(() => callsOf(onChange).length > 0);
   });
+
+  it("resolves task groups correctly", () => {
+    const tasks = readTasks(["test-data/a:buildWithGroup"]);
+    expect(tasks.length).toBe(3);
+    expect(tasks[0].id).toBe("a:buildWithGroup");
+    expect(tasks[0].dependencies).toContain(tasks[1]);
+    expect(tasks[0].dependencies).toContain(tasks[2]);
+    expect(tasks[1].id).toBe("a:buildX");
+    expect(tasks[2].id).toBe("b:buildX");
+  });
 });
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

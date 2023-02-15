@@ -16,7 +16,7 @@ export const TaskfileSchema = z.record(
   z.string(),
   z
     .object({
-      command: z.string(),
+      command: z.string().nullable().optional().default(null),
       kind: z.enum(kinds).optional().default("task"),
       triggerStart: z
         .object({
@@ -59,10 +59,13 @@ export type TaskDeclaration = {
   triggerStart?: { stdin: string };
   detectEnd?: { stdout: { success: string; failure: string } };
   detectChanges?: { stdout: string };
-  dependencies: Array<{ file: string; name: string }>;
+  dependencies: TaskReference[];
   watch: string[];
-  command: string;
+  command: string | null;
 };
+
+export type TaskReference = { file: string; name: string };
+
 export type TaskKind = typeof kinds[number];
 
 export type Worker = {
@@ -79,11 +82,21 @@ export const readTasks = (links: string[]): TaskItem[] => {
   const entrypoints = resolveTaskLinks(links);
   const entrypointFiles = Array.from(new Set(entrypoints.map((e) => e.file)));
   const declarations = readTaskDeclarations(entrypointFiles, new Map());
-  const commonDirectory = getCommonDirectory(declarations);
-  const byId = indexBy(declarations, (d) => buildTaskId(d, commonDirectory));
+  const resolvedDeclarations = declarations.flatMap((declaration) => {
+    if (!declaration.command) return [];
+    return {
+      ...declaration,
+      dependencies: resolveReferences(declaration.dependencies, declarations),
+    };
+  });
+  const resolvedEntrypoints = resolveReferences(entrypoints, declarations);
+  const commonDirectory = getCommonDirectory(resolvedDeclarations);
+  const byId = indexBy(resolvedDeclarations, (d) =>
+    buildTaskId(d, commonDirectory)
+  );
   const tasks = new Map<string, TaskItem>();
   prepareInvolvedTasks(
-    entrypoints.map((e) => buildTaskId(e, commonDirectory)),
+    resolvedEntrypoints.map((e) => buildTaskId(e, commonDirectory)),
     byId,
     tasks,
     commonDirectory
@@ -104,6 +117,23 @@ export const readTasks = (links: string[]): TaskItem[] => {
   }
 
   return Array.from(tasks.values());
+};
+
+const resolveReferences = (
+  references: TaskReference[],
+  allDeclarations: TaskDeclaration[]
+): TaskReference[] => {
+  return references.flatMap((ref) => {
+    const task = allDeclarations.find(
+      (d) => d.file === ref.file && d.name === ref.name
+    );
+    if (!task) throw new Error(`Task ${ref.file}:${ref.name} not found`);
+    if (!task.command) {
+      return resolveReferences(task.dependencies, allDeclarations);
+    } else {
+      return [ref];
+    }
+  });
 };
 
 const prepareInvolvedTasks = (
