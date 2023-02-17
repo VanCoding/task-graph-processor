@@ -2,15 +2,5 @@
   "buildA": {
     "command": "npm run build",
     "dependencies": ["../b:buildB", "x:buildX"]
-  },
-  "buildX": {
-    "command": "asdf"
-  },
-  "build": {
-    "dependencies": ["buildX", "../b:build"]
-  },
-  "buildWithGroup": {
-    "command": "asdf",
-    "dependencies": ["build"]
   }
 }

@@ -16,7 +16,7 @@ export const makeService = ({
   start: () => {
     const process = startProcess({
       env: {},
-      command: declaration.command!,
+      command: declaration.command,
       directory,
     });
     const lines = split();
