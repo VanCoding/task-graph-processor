@@ -1,6 +1,5 @@
 {
   "clean": {
-    "kind": "virtual",
     "dependencies": [
       "./task-graph-processor:",
       "./build-tools/typescript:",
@@ -8,7 +7,6 @@
     ]
   },
   "build": {
-    "kind": "virtual",
     "dependencies": [
       "./task-graph-processor:",
       "./build-tools/typescript:",
@@ -16,7 +14,6 @@
     ]
   },
   "test": {
-    "kind": "virtual",
     "dependencies": [
       "./task-graph-processor:",
       "./build-tools/typescript:",

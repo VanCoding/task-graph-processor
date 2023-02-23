@@ -4,9 +4,9 @@ importers:
 
   .:
     specifiers:
-      task-graph-processor: 0.3.0
+      task-graph-processor: 0.3.1
     dependencies:
-      task-graph-processor: 0.3.0
+      task-graph-processor: 0.3.1
 
   build-tools/typescript:
     specifiers:
@@ -2685,8 +2685,8 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /task-graph-processor/0.3.0:
-    resolution: {integrity: sha512-iqKZCuCyfIV+Svt4KywTpqojSzIWH7yG4yKn5P8c8fNVaebDmOO8WkvVmD9JBueZa1u1BpMOCbZUYRnkOTnrIw==}
+  /task-graph-processor/0.3.1:
+    resolution: {integrity: sha512-/YSBx5ocTXun+DxS4nGTRif+b/90ytxAAEQfl9v6nGglDpTOyzImb5XHFZHg/vTe3FNVDThj+AuZ7TlCYkJ5WQ==}
     hasBin: true
     dependencies:
       chalk: 5.2.0

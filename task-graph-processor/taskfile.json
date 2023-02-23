@@ -1,6 +1,5 @@
 {
   "buildDeps": {
-    "kind": "virtual",
     "dependencies": ["watch-task-protocol:build"]
   },
   "build": {
