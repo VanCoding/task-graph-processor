@@ -15,7 +15,7 @@ export const makeTask = ({
 }): TaskItem => {
   const workerFactory = makeGenericWorkerFactory({
     startProcess: (env) =>
-      startProcess({ env, command: declaration.command, directory }),
+      startProcess({ env, command: declaration.command!, directory }),
     detectChanges: declaration.detectChanges,
     detectEnd: declaration.detectEnd,
     triggerStart: declaration.triggerStart,
@@ -23,9 +23,10 @@ export const makeTask = ({
 
   const onChange = new Signal<() => void>();
   const onFinish = new Signal<(success: boolean) => void>();
+  const onOutput = new Signal<(line: string) => void>();
 
   const { execute } = workerFactory({
-    onOutput: (line) => base.onOutput.emit(line),
+    onOutput: (line) => onOutput.emit(line),
     onChange: () => onChange.emit(),
     onComplete: (success) => onFinish.emit(success),
   });
@@ -42,5 +43,7 @@ export const makeTask = ({
     },
     onChange,
     onFinish,
+    onOutput,
+    state: { type: "PENDING" },
   };
 };

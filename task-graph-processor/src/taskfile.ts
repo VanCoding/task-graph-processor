@@ -3,20 +3,24 @@ import { resolve, dirname } from "path";
 import { readFileSync, existsSync, realpathSync } from "fs";
 import { indexBy } from "remeda";
 import { Signal } from "typed-signals";
-import commondir from "commondir";
 import { makeService } from "./service.js";
 import { makeTask } from "./task.js";
 
-const getCommonDirectory = (tasks: TaskDeclaration[]) =>
-  commondir(tasks.map((task) => dirname(task.file)));
+const kinds = ["task", "service", "virtual"] as const;
 
-const kinds = ["task", "service"] as const;
+const TaskReference = z
+  .object({
+    path: z.string().optional(),
+    name: z.string(),
+  })
+  .or(z.string());
+const TaskReferences = TaskReference.array();
 
 export const TaskfileSchema = z.record(
   z.string(),
   z
     .object({
-      command: z.string(),
+      command: z.string().optional(),
       kind: z.enum(kinds).optional().default("task"),
       triggerStart: z
         .object({
@@ -36,21 +40,18 @@ export const TaskfileSchema = z.record(
           stdout: z.string(),
         })
         .optional(),
-      dependencies: z
-        .array(
-          z
-            .object({
-              path: z.string().optional(),
-              name: z.string(),
-            })
-            .or(z.string())
-        )
-        .optional()
-        .default([]),
+      dependencies: TaskReferences.optional().default([]),
+      after: TaskReferences.optional().default([]),
       watch: z.array(z.string()).optional().default([]),
     })
     .or(z.string())
 );
+
+type Taskfiles = Record<string, Taskfile>;
+
+type Taskfile = {
+  tasks: Record<string, TaskDeclaration>;
+};
 
 export type TaskDeclaration = {
   file: string;
@@ -59,10 +60,14 @@ export type TaskDeclaration = {
   triggerStart?: { stdin: string };
   detectEnd?: { stdout: { success: string; failure: string } };
   detectChanges?: { stdout: string };
-  dependencies: Array<{ file: string; name: string }>;
+  dependencies: TaskReference[];
   watch: string[];
-  command: string;
+  command?: string;
+  after: TaskReference[];
 };
+
+type TaskReference = { file: string; name: string };
+
 export type TaskKind = typeof kinds[number];
 
 export type Worker = {
@@ -76,96 +81,73 @@ const resolveTaskLinks = (links: string[], baseDirectory = process.cwd()) =>
   links.map((link) => getTaskNameAndFile(link, baseDirectory, null));
 
 export const readTasks = (links: string[]): TaskItem[] => {
-  const entrypoints = resolveTaskLinks(links);
-  const entrypointFiles = Array.from(new Set(entrypoints.map((e) => e.file)));
-  const declarations = readTaskDeclarations(entrypointFiles, new Map());
-  const commonDirectory = getCommonDirectory(declarations);
-  const byId = indexBy(declarations, (d) => buildTaskId(d, commonDirectory));
-  const tasks = new Map<string, TaskItem>();
-  prepareInvolvedTasks(
-    entrypoints.map((e) => buildTaskId(e, commonDirectory)),
-    byId,
-    tasks,
-    commonDirectory
+  const { taskfiles, entrypoinReferences } = resolveTaskfiles(
+    links,
+    process.cwd()
   );
-  for (const task of tasks.values()) {
-    for (const dependency of byId[task.id].dependencies) {
-      const dependencyTask = tasks.get(
-        buildTaskId(dependency, commonDirectory)
-      )!;
-      if (!dependencyTask) {
-        throw new Error(
-          `Task ${buildTaskId(dependency, commonDirectory)} not found`
-        );
-      }
-      task.dependencies.push(dependencyTask);
-      dependencyTask.dependents.push(task);
-    }
+  const taskDeclarations = Object.values(taskfiles)
+    .map((taskfile) => Object.values(taskfile.tasks))
+    .flat();
+  const tasks: Record<string, TaskItem> = {};
+
+  for (const declaration of taskDeclarations) {
+    tasks[buildPathId(declaration)] = makeTaskItem(declaration);
+  }
+  for (const task of Object.values(tasks)) {
+    task.dependencies = task.declaration.dependencies.map(
+      (d) => tasks[buildPathId(d)]
+    );
+    task.after = task.declaration.after.map((d) => tasks[buildPathId(d)]);
   }
 
-  return Array.from(tasks.values());
+  return entrypoinReferences.map((e) => tasks[buildPathId(e)]);
 };
 
-const prepareInvolvedTasks = (
-  taskIds: string[],
-  taskDeclarationsById: Record<string, TaskDeclaration>,
-  tasks: Map<string, TaskItem>,
-  commonDirectory: string
+export const resolveTaskfiles = (
+  entrypoints: string[],
+  baseDirectory: string
 ) => {
-  for (const taskId of taskIds) {
-    if (!tasks.has(taskId)) {
-      const declaration = taskDeclarationsById[taskId];
-      if (!declaration) throw new Error(`could not find task ${taskId}`);
+  const taskfiles: Taskfiles = {};
+  const entrypoinReferences = resolveTaskLinks(entrypoints);
 
-      tasks.set(taskId, makeTaskItem(declaration, commonDirectory));
-      prepareInvolvedTasks(
-        declaration.dependencies.map((d) => buildTaskId(d, commonDirectory)),
-        taskDeclarationsById,
-        tasks,
-        commonDirectory
-      );
-    }
+  for (const reference of entrypoinReferences) {
+    resolveTaskReference(reference, taskfiles, baseDirectory);
+  }
+
+  return { taskfiles, entrypoinReferences };
+};
+
+export const resolveTaskReference = (
+  reference: TaskReference,
+  taskfiles: Taskfiles,
+  baseDirectory: string
+) => {
+  const file = resolveTaskfile(reference.file, baseDirectory);
+  if (taskfiles[file]) return;
+  const taskfile = readTaskfile(file);
+  taskfiles[file] = taskfile;
+  for (const task of Object.values(taskfile.tasks)) {
+    [...task.dependencies, ...task.after].forEach((ref) =>
+      resolveTaskReference(ref, taskfiles, file)
+    );
   }
 };
 
-const makeTaskItem = (
-  declaration: TaskDeclaration,
-  commonDirectory: string
-): TaskItem => {
+const makeTaskItem = (declaration: TaskDeclaration): TaskItem => {
   const directory = getTaskDirectory(declaration.file);
-  const onOutput = new Signal<(line: string) => void>();
 
   const base: BaseTask = {
-    id: buildTaskId(declaration, commonDirectory),
-    name: declaration.name,
+    declaration,
+    pathId: buildPathId(declaration),
     dependencies: [],
-    dependents: [],
-    onOutput,
-    state: { type: "PENDING" },
+    after: [],
   };
 
   return declaration.kind === "task"
     ? makeTask({ declaration, directory, base })
-    : makeService({ declaration, directory, base });
-};
-
-export const readTaskDeclarations = (
-  files: string[],
-  taskfiles: Map<string, TaskDeclaration[]>
-) => {
-  for (const taskfilePath of files) {
-    if (!taskfiles.has(taskfilePath)) {
-      const tasks = readTaskfileTasks(taskfilePath);
-      taskfiles.set(taskfilePath, tasks);
-      for (const task of tasks) {
-        readTaskDeclarations(
-          Array.from(new Set(task.dependencies.map((d) => d.file))),
-          taskfiles
-        );
-      }
-    }
-  }
-  return Array.from(taskfiles.values()).flatMap((tasks) => tasks);
+    : declaration.kind === "service"
+    ? makeService({ declaration, directory, base })
+    : { ...base, kind: declaration.kind };
 };
 
 export const resolveTaskfile = (path: string, baseDirectory: string) => {
@@ -194,12 +176,12 @@ export const resolveTaskfile = (path: string, baseDirectory: string) => {
 export const resolveTaskFiles = (baseDirectory: string, paths: string[]) =>
   paths.map((path) => resolveTaskfile(path, baseDirectory));
 
-export const readTaskfileTasks = (file: string): TaskDeclaration[] => {
+export const readTaskfile = (file: string): Taskfile => {
   const content = readFileSync(file).toString("utf-8");
   const parsed = TaskfileSchema.parse(JSON.parse(content));
   const directory = getTaskDirectory(file);
-  return Object.entries(parsed).map(([name, task]) => {
-    return {
+  const tasks = Object.entries(parsed).map(([name, task]) => {
+    const declaration: TaskDeclaration = {
       ...(typeof task === "string"
         ? { command: task, kind: "task", watch: [] }
         : task),
@@ -211,15 +193,22 @@ export const readTaskfileTasks = (file: string): TaskDeclaration[] => {
           : task.dependencies.map((d) =>
               getTaskNameAndFile(d, directory, name)
             ),
+      after:
+        typeof task === "string"
+          ? []
+          : task.after.map((t) => getTaskNameAndFile(t, directory, name)),
     };
+    return declaration;
   });
+
+  return { tasks: indexBy(tasks, (task) => buildPathId(task)) };
 };
 
 export const getTaskNameAndFile = (
   task: string | { name?: string; path?: string },
   directory: string,
   parentTaskName: string | null
-) => {
+): TaskReference => {
   const taskObj = typeof task === "object" ? task : parseTaskReference(task);
   if (!parentTaskName && !taskObj.name)
     throw new Error("must specify task name");
@@ -243,13 +232,8 @@ export const parseTaskReference = (
 };
 
 export const getTaskDirectory = (taskfilePath: string) => dirname(taskfilePath);
-export const buildTaskId = (
-  declaration: Pick<TaskDeclaration, "name" | "file">,
-  commonDirectory: string
-) => {
-  const dir = dirname(declaration.file).substring(commonDirectory.length + 1);
-  return `${dir}:${declaration.name}`;
-};
+const buildPathId = ({ file, name }: Pick<TaskDeclaration, "name" | "file">) =>
+  `${file}/${name}`;
 
 type TaskState =
   | {
@@ -267,25 +251,31 @@ type TaskState =
     };
 
 export type BaseTask = {
-  id: string;
-  name: string;
+  declaration: TaskDeclaration;
+  pathId: string;
   dependencies: TaskItem[];
-  dependents: TaskItem[];
-  onOutput: Signal<(line: string) => void>;
-  state: TaskState;
+  after: TaskItem[];
 };
 
 export type Task = BaseTask & {
   kind: "task";
+  onOutput: Signal<(line: string) => void>;
   onFinish: Signal<(success: boolean) => void>;
   onChange: Signal<() => void>;
   execute: () => void;
   watch: () => void;
+  state: TaskState;
 };
 
 export type Service = BaseTask & {
   kind: "service";
+  onOutput: Signal<(line: string) => void>;
   start: () => void;
+  state: TaskState;
 };
 
-export type TaskItem = Task | Service;
+export type Virtual = BaseTask & {
+  kind: "virtual";
+};
+
+export type TaskItem = Task | Service | Virtual;

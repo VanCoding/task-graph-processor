@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { run, command, flag, restPositionals } from "cmd-ts";
-import { createPipeline } from "./run.js";
+import { createPipeline } from "./pipeline.js";
 import { readTasks } from "./taskfile.js";
 
 const cmd = command({
@@ -14,8 +14,8 @@ const cmd = command({
     watch: flag({ long: "watch", short: "w" }),
   },
   handler: ({ watch, tasks: taskPaths }) => {
-    const tasks = readTasks(taskPaths);
-    const pipeline = createPipeline(tasks, { watch });
+    const entrypoints = readTasks(taskPaths);
+    const pipeline = createPipeline(entrypoints, { watch });
     if (!watch) {
       pipeline.onFinish.connect((success) => {
         process.exit(success ? 0 : 1);

@@ -1,33 +1,35 @@
 import { callsOf, spy } from "testtriple";
 import { mkdirSync, writeFileSync } from "fs";
-import { readTasks } from "./taskfile.js";
+import { readTasks, Task } from "./taskfile.js";
 
 describe("readTasks", () => {
   it("reads tasks correctly", () => {
     const tasks = readTasks(["test-data/a:buildA"]);
-    const [a, b, c, x] = tasks;
-    expect(tasks).toHaveLength(4);
-    expect(a.name).toBe("buildA");
-    expect(a.id).toBe("a:buildA");
-    expect(b.name).toBe("buildB");
-    expect(b.id).toBe("b:buildB");
-    expect(c.name).toBe("buildC");
-    expect(c.id).toBe("c:buildC");
-    expect(x.name).toBe("buildX");
-    expect(x.id).toBe("a/node_modules/x:buildX");
+    const [a] = tasks;
+    expect(tasks).toHaveLength(1);
+    expect(a.declaration.name).toBe("buildA");
+    expect(a.dependencies).toHaveLength(2);
+    const [b, x] = a.dependencies;
+    expect(b.declaration.name).toBe("buildB");
+    expect(x.declaration.name).toBe("buildX");
+    expect(b.dependencies).toHaveLength(1);
+    const [c] = b.dependencies;
+    expect(c.declaration.name).toBe("buildC");
   });
   it("reads lint task correctly", () => {
-    const [lint, lintC, buildC] = readTasks(["test-data/b:lint"]);
-    expect(lint.name).toBe("lint");
-    expect(lintC.id).toBe("c:lint");
-    expect(buildC.id).toBe("c:buildC");
+    const [lintB] = readTasks(["test-data/b:lint"]);
+    expect(lintB.declaration.name).toBe("lint");
+    const [lintC] = lintB.dependencies;
+    expect(lintC.declaration.name).toBe("lint");
+    const [buildC] = lintC.dependencies;
+    expect(buildC.declaration.name).toBe("buildC");
   });
 
   it("wires up workers correctly", async () => {
     const [lint] = readTasks(["test-data/b:lint"]);
-    expect(lint.name).toBe("lint");
+    expect(lint.declaration.name).toBe("lint");
     const output: string[] = [];
-    lint.onOutput.connect((line) => output.push(line));
+    (lint as Task).onOutput.connect((line) => output.push(line));
     if (lint.kind !== "task") throw new Error("must be a task");
     lint.execute();
     await waitFor(() => output.length > 0);

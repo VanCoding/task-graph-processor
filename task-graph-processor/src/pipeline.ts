@@ -1,9 +1,12 @@
+import { dirname } from "path";
 import chalk from "chalk";
 import { Signal } from "typed-signals";
 import distinctColors from "distinct-colors";
-import { TaskItem } from "./taskfile.js";
+import { TaskDeclaration, TaskItem } from "./taskfile.js";
+import commondir from "commondir";
 
 type PipelineItem = {
+  id: string;
   task: TaskItem;
   color: string;
   dependencies: PipelineItem[];
@@ -11,26 +14,36 @@ type PipelineItem = {
 };
 
 export const createPipeline = (
-  tasks: TaskItem[],
+  entrypoints: TaskItem[],
   options: PipelineOptions
 ): Pipeline => {
+  const tasks = addTasksToExecute(entrypoints);
+
   const colors = distinctColors
-    .default({ count: tasks.length })
+    .default({ count: tasks.size })
     .map((c) => c.hex());
-  const items: PipelineItem[] = tasks.map((task, index) => ({
+
+  const commonDirectory = getCommonDirectory(Array.from(tasks));
+
+  const items: PipelineItem[] = Array.from(tasks).map((task, index) => ({
+    id: buildTaskId(task.declaration, commonDirectory),
     task,
     color: colors[index],
     dependencies: [],
     dependents: [],
     state: { type: "PENDING" },
   }));
+
+  const itemByTask = (task: TaskItem) =>
+    items.find((item) => item.task === task)!;
+
   for (const item of items) {
-    item.dependencies = item.task.dependencies.map(
-      (dependency) => items.find((item) => item.task === dependency)!
+    item.dependencies = Array.from(addToDependencies(item.task, tasks)).map(
+      itemByTask
     );
-    item.dependents = item.task.dependents.map(
-      (dependent) => items.find((item) => item.task === dependent)!
-    );
+    for (const dependency of item.dependencies) {
+      dependency.dependents.push(item);
+    }
   }
 
   const pipeline: Pipeline = {
@@ -46,8 +59,11 @@ export const createPipeline = (
       }
     },
   };
+
   items.forEach((item) => {
-    item.task.onOutput.connect((line) => printTaskLine(item, line));
+    if ("onOutput" in item.task) {
+      item.task.onOutput.connect((line) => printTaskLine(item, line));
+    }
     if (item.task.kind === "task") {
       item.task.onChange.connect(() => {
         markDirty(item, pipeline);
@@ -62,6 +78,32 @@ export const createPipeline = (
   return pipeline;
 };
 
+const addTasksToExecute = (
+  tasks: TaskItem[],
+  tasksToExecute: Set<TaskItem> = new Set()
+) => {
+  for (const task of tasks) {
+    tasksToExecute.add(task);
+    addTasksToExecute(task.dependencies, tasksToExecute);
+  }
+  return tasksToExecute;
+};
+
+const addToDependencies = (
+  task: TaskItem,
+  tasksToExecute: Set<TaskItem>,
+  dependencies: Set<TaskItem> = new Set()
+) => {
+  for (const subtask of task.after.concat(task.dependencies)) {
+    if (tasksToExecute.has(subtask)) {
+      dependencies.add(subtask);
+    } else {
+      addToDependencies(subtask, tasksToExecute, dependencies);
+    }
+  }
+  return dependencies;
+};
+
 type PipelineOptions = {
   watch?: boolean;
 };
@@ -74,28 +116,31 @@ type Pipeline = {
 };
 
 const printTaskLine = (item: PipelineItem, text: string) => {
-  console.log(`${chalk.hex(item.color).bold(item.task.id)}> ${text}`);
+  console.log(`${chalk.hex(item.color).bold(item.id)}> ${text}`);
 };
 
-const getBuildableItems = (pipeline: Pipeline): PipelineItem[] => {
-  return pipeline.items.filter(
-    (item) =>
-      item.task.state.type === "PENDING" &&
-      !item.dependencies.find(
-        (dependency) =>
-          (dependency.task.kind === "task" &&
-            dependency.task.state.type !== "COMPLETE") ||
-          (dependency.task.kind === "service" &&
-            dependency.task.state.type === "PENDING")
-      )
+const isBuildable = (item: PipelineItem, pipeline: Pipeline): boolean => {
+  const allDependenciesDone = !item.dependencies.find(
+    (i) => !isDone(i, pipeline)
+  );
+  return (
+    allDependenciesDone &&
+    item.task.kind !== "virtual" &&
+    item.task.state.type === "PENDING"
   );
 };
 
+const getBuildableItems = (pipeline: Pipeline): PipelineItem[] => {
+  return pipeline.items.filter((item) => isBuildable(item, pipeline));
+};
+
 const markDirty = (item: PipelineItem, pipeline: Pipeline) => {
-  item.task.state =
-    item.task.state.type === "RUNNING"
-      ? { ...item.task.state, dirty: true }
-      : { type: "PENDING" };
+  if (item.task.kind !== "virtual") {
+    item.task.state =
+      item.task.state.type === "RUNNING"
+        ? { ...item.task.state, dirty: true }
+        : { type: "PENDING" };
+  }
   for (const dependent of item.dependents) {
     markDirty(dependent, pipeline);
   }
@@ -106,6 +151,7 @@ const markCompleted = (
   success: boolean,
   pipeline: Pipeline
 ) => {
+  if (item.task.kind === "virtual") return;
   if (item.task.state.type === "RUNNING") {
     const time = new Date().getTime() - item.task.state.start.getTime();
     item.task.state = {
@@ -144,10 +190,14 @@ const execute = (item: PipelineItem, pipeline: Pipeline) => {
 };
 
 const isFailed = (item: PipelineItem) =>
-  item.task.state.type === "COMPLETE" && !item.task.state.success;
+  item.task.kind !== "virtual" &&
+  item.task.state.type === "COMPLETE" &&
+  !item.task.state.success;
 
-const isDone = (item: PipelineItem, pipeline: Pipeline) =>
-  item.task.kind === "task"
+const isDone = (item: PipelineItem, pipeline: Pipeline): boolean =>
+  item.task.kind === "virtual"
+    ? !item.dependencies.find((i) => !isDone(i, pipeline))
+    : item.task.kind === "task"
     ? item.task.state.type === "COMPLETE" && item.task.state.success
     : item.task.state.type === "RUNNING" || !pipeline.options.watch;
 
@@ -168,4 +218,15 @@ const decideAction = (pipeline: Pipeline) => {
   for (const project of buildableProjects) {
     execute(project, pipeline);
   }
+};
+
+const getCommonDirectory = (tasks: TaskItem[]) =>
+  commondir(tasks.map((task) => dirname(task.declaration.file)));
+
+export const buildTaskId = (
+  declaration: Pick<TaskDeclaration, "name" | "file">,
+  commonDirectory: string
+) => {
+  const dir = dirname(declaration.file).substring(commonDirectory.length + 1);
+  return `${dir}:${declaration.name}`;
 };
