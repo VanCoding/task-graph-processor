@@ -2,8 +2,8 @@
 
 This is a monorepo consisting of
 
-- The [watch-task-protocol](./watch-task-protocol/readme.md)
-- The [task-graph-processor](./watch-task-protocol/readme.md) built around the watch-task-protocol
+- The [watch-task-protocol](./watch-task-protocol/)
+- The [task-graph-processor](./watch-task-protocol/) built around the watch-task-protocol
 - [Build-Tool Wrappers](./build-tools/) that bring watch-task-protocol support to the respective build tools
 
 ## demo time
