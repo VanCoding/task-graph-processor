@@ -1,11 +1,15 @@
 {
+  "buildDeps": {
+    "kind": "virtual",
+    "dependencies": ["watch-task-protocol:build"]
+  },
   "build": {
     "command": "tsc-watch",
-    "dependencies": ["watch-task-protocol:", "clean"]
+    "after": ["clean", "buildDeps"]
   },
   "clean": "rm -rf dist",
   "test": {
     "command": "NODE_OPTIONS='--loader ts-node/esm --no-warnings' jest src/**",
-    "dependencies": ["watch-task-protocol:build"]
+    "after": ["buildDeps", "build"]
   }
 }

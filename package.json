@@ -1,12 +1,7 @@
 {
   "private": true,
   "version": "0.1.0",
-  "scripts": {
-    "test": "tgp ./build-tools/typescript:test ./task-graph-processor:test ./watch-task-protocol:test",
-    "build": "tgp ./build-tools/typescript:build ./task-graph-processor:build",
-    "clean": "tgp ./build-tools/typescript:clean ./task-graph-processor:clean ./watch-task-protocol:clean"
-  },
   "dependencies": {
-    "task-graph-processor": "0.2.2"
+    "task-graph-processor": "0.3.0"
   }
 }

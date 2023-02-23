@@ -4,9 +4,9 @@ importers:
 
   .:
     specifiers:
-      task-graph-processor: 0.2.2
+      task-graph-processor: 0.3.0
     dependencies:
-      task-graph-processor: 0.2.2
+      task-graph-processor: 0.3.0
 
   build-tools/typescript:
     specifiers:
@@ -2685,13 +2685,15 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /task-graph-processor/0.2.2:
-    resolution: {integrity: sha512-TEFgrCcc1ES7UW1xw4hprfhsiM/avXVyQmclJpLEnPx3/k4sUVh/gndkgtN/KeGxbfP+ujOdY09Azz/RIepF7g==}
+  /task-graph-processor/0.3.0:
+    resolution: {integrity: sha512-iqKZCuCyfIV+Svt4KywTpqojSzIWH7yG4yKn5P8c8fNVaebDmOO8WkvVmD9JBueZa1u1BpMOCbZUYRnkOTnrIw==}
     hasBin: true
     dependencies:
+      chalk: 5.2.0
       chokidar: 3.5.3
       cmd-ts: 0.11.0
       commondir: 1.0.1
+      distinct-colors: 3.0.0
       npm-run-path: 5.1.0
       remeda: 1.6.1
       split2: 4.1.0

@@ -1,8 +1,11 @@
 {
-  "test": "NODE_OPTIONS='--loader ts-node/esm --no-warnings' jest src/**",
+  "test": {
+    "command": "NODE_OPTIONS='--loader ts-node/esm --no-warnings' jest src/**",
+    "after": ["build"]
+  },
   "build": {
     "command": "tsc-watch",
-    "dependencies": ["clean"]
+    "after": ["clean"]
   },
   "clean": "rm -rf dist"
 }

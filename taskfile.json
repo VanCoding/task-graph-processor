@@ -1,0 +1,26 @@
+{
+  "clean": {
+    "kind": "virtual",
+    "dependencies": [
+      "./task-graph-processor:",
+      "./build-tools/typescript:",
+      "./watch-task-protocol:"
+    ]
+  },
+  "build": {
+    "kind": "virtual",
+    "dependencies": [
+      "./task-graph-processor:",
+      "./build-tools/typescript:",
+      "./watch-task-protocol:"
+    ]
+  },
+  "test": {
+    "kind": "virtual",
+    "dependencies": [
+      "./task-graph-processor:",
+      "./build-tools/typescript:",
+      "./watch-task-protocol:"
+    ]
+  }
+}
