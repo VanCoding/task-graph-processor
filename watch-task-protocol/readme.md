@@ -1,4 +1,4 @@
-## watch-task-protocol
+# watch-task-protocol
 
 The main goal of the watch-task-protocol is making it possible to coordinate multiple watch processes. These are processes that don't exit after a build, but instead continue to rebuild as soon as file-changes are detected. The problem with such processes is that they cannot coordinate themselves with each other. So if both `lib` and `app` detect filechanges at the same time, both processes will immediately start re-building. This is a problem, because re-building `app` only makes sense _after_ `lib` is built successfully.
 
