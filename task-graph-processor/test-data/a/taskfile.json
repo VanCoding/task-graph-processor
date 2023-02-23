@@ -2,5 +2,8 @@
   "buildA": {
     "command": "npm run build",
     "dependencies": ["../b:buildB", "x:buildX"]
+  },
+  "virtual": {
+    "dependencies": ["buildA"]
   }
 }

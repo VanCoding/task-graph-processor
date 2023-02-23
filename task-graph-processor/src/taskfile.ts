@@ -198,6 +198,11 @@ export const readTaskfile = (file: string): Taskfile => {
           ? []
           : task.after.map((t) => getTaskNameAndFile(t, directory, name)),
     };
+    if (!declaration.command) {
+      if (declaration.dependencies.length === 0)
+        throw new Error("a task must either have a command or dependencies");
+      declaration.kind = "virtual";
+    }
     return declaration;
   });
 

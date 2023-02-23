@@ -47,6 +47,16 @@ describe("readTasks", () => {
 
     await waitFor(() => callsOf(onChange).length > 0);
   });
+  it("sets kind to virtual if no command is set", () => {
+    const [virtual] = readTasks(["test-data/a:virtual"]);
+
+    expect(virtual.kind).toBe("virtual");
+  });
+  it("throws if neither a command nor dependencies are set", () => {
+    expect(() => {
+      readTasks(["test-data/invalid:invalid"]);
+    }).toThrow("a task must either have a command or dependencies");
+  });
 });
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
