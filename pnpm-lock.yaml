@@ -4,9 +4,9 @@ importers:
 
   .:
     specifiers:
-      task-graph-processor: 0.3.1
+      task-graph-processor: 0.4.0
     dependencies:
-      task-graph-processor: 0.3.1
+      task-graph-processor: 0.4.0
 
   build-tools/typescript:
     specifiers:
@@ -2685,8 +2685,8 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /task-graph-processor/0.3.1:
-    resolution: {integrity: sha512-/YSBx5ocTXun+DxS4nGTRif+b/90ytxAAEQfl9v6nGglDpTOyzImb5XHFZHg/vTe3FNVDThj+AuZ7TlCYkJ5WQ==}
+  /task-graph-processor/0.4.0:
+    resolution: {integrity: sha512-MrPdigSRIuQprEVt3HwhVOVbc75V9BcFZWgVgEHc4UTN0FjrsYDEe4MxLn3bYYTVmExpdTJxuI8ZUkWbCvcJUA==}
     hasBin: true
     dependencies:
       chalk: 5.2.0
@@ -2698,7 +2698,7 @@ packages:
       remeda: 1.6.1
       split2: 4.1.0
       typed-signals: 2.5.0
-      watch-task-protocol: 0.2.1
+      watch-task-protocol: 0.3.0
       zod: 3.20.2
     transitivePeerDependencies:
       - supports-color
@@ -2844,6 +2844,13 @@ packages:
     resolution: {integrity: sha512-xh3tuVKzlPyjncyHGqTh0rAt+0ZQz/dtaNRHJQPbnIAQb9NTyV95OCAvg4BoRfmUZzKbdVKMoIr9lWazUphipA==}
     dependencies:
       split2: 4.1.0
+    dev: true
+
+  /watch-task-protocol/0.3.0:
+    resolution: {integrity: sha512-3Wdds/E6wo+dMiBoygUOZZU3sInyVLtFm5W+AjXvGQRmkaW8cpW6Nhj5OnQYpWQbRa+XVH+qUiHslR4omMzJxw==}
+    dependencies:
+      split2: 4.1.0
+    dev: false
 
   /which/2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
